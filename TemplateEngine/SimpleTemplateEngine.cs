@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using TemplateEngine.Modifiers;
 
 namespace TemplateEngine;
 
@@ -10,7 +11,8 @@ namespace TemplateEngine;
 public class SimpleTemplateEngine
 {
     private readonly List<TemplateItem> _items;
-    private readonly Regex _tokenRegex = new Regex(@"\{(\w+)\.(\w+)(?::([^}]+))?\}", RegexOptions.Compiled);
+    private readonly Regex _tokenRegex = new Regex(@"\{\{(\w+)\.(\w+)(?::([^}]+))?\}\}", RegexOptions.Compiled);
+    private readonly ModifierProcessor _modifierProcessor;
 
     /// <summary>
     /// Initializes a new instance of the SimpleTemplateEngine with JSON data.
@@ -20,6 +22,7 @@ public class SimpleTemplateEngine
     public SimpleTemplateEngine(string jsonData, Action<JsonSerializerOptions>? configureOptions = null)
     {
         _items = ParseJsonData(jsonData, configureOptions);
+        _modifierProcessor = new ModifierProcessor();
     }
 
     /// <summary>
@@ -29,6 +32,7 @@ public class SimpleTemplateEngine
     public SimpleTemplateEngine(List<TemplateItem> items)
     {
         _items = items;
+        _modifierProcessor = new ModifierProcessor();
     }
 
     /// <summary>
@@ -89,7 +93,7 @@ public class SimpleTemplateEngine
     }
 
     /// <summary>
-    /// Processes a value with the specified modifiers (rounding, conversion, etc.).
+    /// Processes a value with the specified modifiers using the modifier processor.
     /// </summary>
     /// <param name="value">The value to process.</param>
     /// <param name="modifiers">The modifiers to apply (e.g., "convert(mph):round(2)").</param>
@@ -97,44 +101,26 @@ public class SimpleTemplateEngine
     /// <returns>The processed value as a string.</returns>
     private string ProcessValueWithModifiers(object? value, string modifiers, string? unit)
     {
-        if (value is not double numericValue)
-        {
-            if (value is string || !double.TryParse(value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out numericValue))
-            {
-                return value?.ToString() ?? string.Empty;
-            }
-        }
-
-        var currentValue = numericValue;
-        var currentUnit = unit?.ToLowerInvariant() ?? string.Empty;
-
-        // Parse modifiers (e.g., "convert(mph):round(2)")
-        var modifierParts = modifiers.Split(':');
+        // Handle non-numeric values
+        if (value is double numericValue)
+            return _modifierProcessor.ProcessModifiers(numericValue, unit?.ToLowerInvariant() ?? string.Empty,
+                modifiers);
         
-        foreach (var modifier in modifierParts)
+        if (value is string || !double.TryParse(value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out numericValue))
         {
-            var trimmedModifier = modifier.Trim();
-            
-            if (trimmedModifier.StartsWith("round(") && trimmedModifier.EndsWith(")"))
-            {
-                var roundParam = trimmedModifier[6..^1]; // Extract parameter between round( and )
-                if (int.TryParse(roundParam, out var decimals))
-                {
-                    currentValue = Math.Round(currentValue, decimals);
-                }
-            }
-            else if (trimmedModifier.StartsWith("convert(") && trimmedModifier.EndsWith(")"))
-            {
-                var convertParam = trimmedModifier[8..^1]; // Extract parameter between convert( and )
-                if (!string.IsNullOrEmpty(currentUnit))
-                {
-                    currentValue = UnitConverter.Convert(currentValue, currentUnit, convertParam);
-                    currentUnit = convertParam; // Update current unit for potential chaining
-                }
-            }
+            return value?.ToString() ?? string.Empty;
         }
 
-        return currentValue.ToString(CultureInfo.InvariantCulture);
+        return _modifierProcessor.ProcessModifiers(numericValue, unit?.ToLowerInvariant() ?? string.Empty, modifiers);
+    }
+
+    /// <summary>
+    /// Registers a custom modifier with the template engine.
+    /// </summary>
+    /// <param name="modifier">The custom modifier to register.</param>
+    public void RegisterModifier(IValueModifier modifier)
+    {
+        _modifierProcessor.RegisterModifier(modifier);
     }
 
     /// <summary>
