@@ -15,7 +15,7 @@ public class ModifierTests
             new() { Name = "speed", NumericValue = 123.456789, Unit = "km/h" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act & Assert
         Assert.Equal("123.46", engine.ProcessTemplate("{{speed.value:round(2)}}"));
@@ -34,7 +34,7 @@ public class ModifierTests
             new() { Name = "temp", NumericValue = 25, Unit = "celsius" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act & Assert - Use rounded values to avoid floating point precision issues
         Assert.Equal("62.1371", engine.ProcessTemplate("{{speed.value:convert(mph):round(4)}}"));
@@ -51,7 +51,7 @@ public class ModifierTests
             new() { Name = "speed", NumericValue = 100, Unit = "km/h" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act & Assert
         Assert.Equal("62.1", engine.ProcessTemplate("{{speed.value:convert(mph):round(1)}}"));
@@ -67,7 +67,7 @@ public class ModifierTests
             new() { Name = "speed", NumericValue = 100.789, Unit = "km/h" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act & Assert
         // First round to 101, then convert to mph
@@ -83,7 +83,7 @@ public class ModifierTests
             new() { Name = "weight", NumericValue = 100, Unit = "kg" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act - Try to convert kg to mph (invalid conversion)
         var result = engine.ProcessTemplate("{{weight.value:convert(mph)}}");
@@ -101,7 +101,7 @@ public class ModifierTests
             new() { Name = "type", StringValue = "electric power" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Act
         var result = engine.ProcessTemplate("{{type.value:round(2)}}");
@@ -130,7 +130,7 @@ public class ModifierTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "Speed: {{car_speed.value:convert(mph):round(1)}} mph, " +
                       "Consumption: {{fuel_consumption.value:convert(mpg):round(1)}} mpg, " +
                       "Temp: {{temperature.value:convert(fahrenheit):round(0)}}°F";
@@ -151,7 +151,7 @@ public class ModifierTests
             new() { Name = "test", NumericValue = 10, Unit = "units" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Create a custom modifier that multiplies by 2
         var customModifier = new TestMultiplyModifier();
@@ -173,7 +173,7 @@ public class ModifierTests
             new() { Name = "test", NumericValue = 5.555, Unit = "km/h" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         
         // Register custom modifier
         engine.RegisterModifier(new TestMultiplyModifier());

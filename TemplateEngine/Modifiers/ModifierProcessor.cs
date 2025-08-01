@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace TemplateEngine.Modifiers;
 
 /// <summary>
@@ -10,8 +12,18 @@ public class ModifierProcessor
         new RoundModifier(),
         new ConvertModifier()
     };
-
     
+    private readonly CultureInfo _culture;
+
+    /// <summary>
+    /// Initializes a new instance of the ModifierProcessor with the specified culture.
+    /// </summary>
+    /// <param name="culture">The culture to use for formatting. Defaults to InvariantCulture if null.</param>
+    public ModifierProcessor(CultureInfo? culture = null)
+    {
+        _culture = culture ?? CultureInfo.InvariantCulture;
+    }
+
     /// <summary>
     /// Processes all modifiers in sequence for the given value and unit.
     /// </summary>
@@ -33,7 +45,7 @@ public class ModifierProcessor
             modifier?.Apply(context, trimmedModifier);
         }
 
-        return context.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return context.Value.ToString(_culture);
     }
 
     /// <summary>

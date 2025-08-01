@@ -6,33 +6,38 @@ using TemplateEngine.Modifiers;
 namespace TemplateEngine;
 
 /// <summary>
-/// A simple template engine that processes templates with token replacement, unit conversion, and value formatting.
+/// A template engine that processes templates with token replacement, unit conversion, and value formatting.
 /// </summary>
-public class SimpleTemplateEngine
+public class TemplateEngine : ITemplateEngine
 {
     private readonly List<TemplateItem> _items;
     private readonly Regex _tokenRegex = new Regex(@"\{\{(\w+)\.(\w+)(?::([^}]+))?\}\}", RegexOptions.Compiled);
     private readonly ModifierProcessor _modifierProcessor;
+    private readonly CultureInfo _culture;
 
     /// <summary>
-    /// Initializes a new instance of the SimpleTemplateEngine with JSON data.
+    /// Initializes a new instance of the TemplateEngine with JSON data.
     /// </summary>
     /// <param name="jsonData">JSON string containing an array of template items.</param>
-    /// <param name="configureOptions">Optional action to configure JSON serialization options.</param>
-    public SimpleTemplateEngine(string jsonData, Action<JsonSerializerOptions>? configureOptions = null)
+    /// <param name="options">Optional configuration options for the template engine.</param>
+    public TemplateEngine(string jsonData, TemplateEngineOptions? options = null)
     {
-        _items = ParseJsonData(jsonData, configureOptions);
-        _modifierProcessor = new ModifierProcessor();
+        options ??= new TemplateEngineOptions();
+        _culture = options.Culture;
+        _items = ParseJsonData(jsonData, options.ConfigureJsonOptions);
+        _modifierProcessor = new ModifierProcessor(_culture);
     }
 
     /// <summary>
-    /// Initializes a new instance of the SimpleTemplateEngine with a list of template items.
+    /// Initializes a new instance of the TemplateEngine with a list of template items.
     /// </summary>
     /// <param name="items">The list of template items.</param>
-    public SimpleTemplateEngine(List<TemplateItem> items)
+    /// <param name="culture">Optional culture for formatting. Defaults to InvariantCulture.</param>
+    public TemplateEngine(List<TemplateItem> items, CultureInfo? culture = null)
     {
         _items = items;
-        _modifierProcessor = new ModifierProcessor();
+        _culture = culture ?? CultureInfo.InvariantCulture;
+        _modifierProcessor = new ModifierProcessor(_culture);
     }
 
     /// <summary>
@@ -106,7 +111,7 @@ public class SimpleTemplateEngine
             return _modifierProcessor.ProcessModifiers(numericValue, unit?.ToLowerInvariant() ?? string.Empty,
                 modifiers);
         
-        if (value is string || !double.TryParse(value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out numericValue))
+        if (value is string || !double.TryParse(value?.ToString(), NumberStyles.Float, _culture, out numericValue))
         {
             return value?.ToString() ?? string.Empty;
         }
@@ -124,17 +129,17 @@ public class SimpleTemplateEngine
     }
 
     /// <summary>
-    /// Formats a value for display, ensuring culture-invariant number formatting.
+    /// Formats a value for display, using the configured culture for number formatting.
     /// </summary>
     /// <param name="value">The value to format.</param>
     /// <returns>The formatted value as a string.</returns>
-    private static string FormatValue(object? value)
+    private string FormatValue(object? value)
     {
         return value switch
         {
-            double d => d.ToString(CultureInfo.InvariantCulture),
-            float f => f.ToString(CultureInfo.InvariantCulture),
-            decimal dec => dec.ToString(CultureInfo.InvariantCulture),
+            double d => d.ToString(_culture),
+            float f => f.ToString(_culture),
+            decimal dec => dec.ToString(_culture),
             _ => value?.ToString() ?? string.Empty
         };
     }

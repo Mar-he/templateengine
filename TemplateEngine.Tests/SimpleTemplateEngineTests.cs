@@ -1,9 +1,10 @@
 using Xunit;
 using System.Text.Json;
+using System.Globalization;
 
 namespace TemplateEngine.Tests;
 
-public class SimpleTemplateEngineTests
+public class TemplateEngineTests
 {
     [Fact]
     public void ProcessTemplate_WithNumericValue_ReplacesTokenCorrectly()
@@ -17,7 +18,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "The weight is {{foo.value}} {{foo.unit}}";
         
         // Act
@@ -38,7 +39,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "The type is {{foo.value}}";
         
         // Act
@@ -63,7 +64,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "Item: {{type.value}}, Weight: {{weight.value}} {{weight.unit}}";
         
         // Act
@@ -82,7 +83,7 @@ public class SimpleTemplateEngineTests
             new() { Name = "foo", NumericValue = 42, Unit = "units" }
         };
         
-        var engine = new SimpleTemplateEngine(items);
+        var engine = new TemplateEngine(items);
         var template = "Name: {{foo.name}}, Value: {{foo.value}}";
         
         // Act
@@ -104,7 +105,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "Value: {{bar.value}}";
         
         // Act
@@ -126,7 +127,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "Value: {{foo.unknown}}";
         
         // Act
@@ -147,7 +148,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "Unit: '{{foo.unit}}'";
         
         // Act
@@ -169,7 +170,7 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var template = "{{FOO.value}} {{FOO.unit}}";
         
         // Act
@@ -191,12 +192,17 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        // Act
-        var engine = new SimpleTemplateEngine(jsonData, options =>
+        var options = new TemplateEngineOptions
         {
-            // Override the default naming policy to use camel case
-            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        });
+            ConfigureJsonOptions = jsonOptions =>
+            {
+                // Override the default naming policy to use camel case
+                jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            }
+        };
+        
+        // Act
+        var engine = new TemplateEngine(jsonData, options);
         
         // Since we changed to camel case and the JSON properties don't match our C# properties,
         // this should result in a TemplateItem with default values
@@ -223,7 +229,7 @@ public class SimpleTemplateEngineTests
         """;
         
         // Act - No custom options provided
-        var engine = new SimpleTemplateEngine(jsonData);
+        var engine = new TemplateEngine(jsonData);
         var items = engine.GetItems();
         
         // Assert - Should parse correctly with default options
@@ -245,13 +251,18 @@ public class SimpleTemplateEngineTests
         }]
         """;
         
-        // Act - Custom options that don't interfere with existing functionality
-        var engine = new SimpleTemplateEngine(jsonData, options =>
+        var options = new TemplateEngineOptions
         {
-            // Add a custom option while preserving defaults
-            options.AllowTrailingCommas = true;
-            options.ReadCommentHandling = JsonCommentHandling.Skip;
-        });
+            ConfigureJsonOptions = jsonOptions =>
+            {
+                // Add a custom option while preserving defaults
+                jsonOptions.AllowTrailingCommas = true;
+                jsonOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+            }
+        };
+        
+        // Act - Custom options that don't interfere with existing functionality
+        var engine = new TemplateEngine(jsonData, options);
         
         var items = engine.GetItems();
         
@@ -260,5 +271,55 @@ public class SimpleTemplateEngineTests
         Assert.Equal("test_item", items[0].Name);
         Assert.Equal(42.5, items[0].NumericValue);
         Assert.Equal("kg", items[0].Unit);
+    }
+
+    [Fact]
+    public void Constructor_WithCustomCulture_FormatsNumbersCorrectly()
+    {
+        // Arrange
+        var items = new List<TemplateItem>
+        {
+            new() { Name = "test", NumericValue = 1234.56, Unit = "kg" }
+        };
+        
+        var germanCulture = new CultureInfo("de-DE");
+        var engine = new TemplateEngine(items, germanCulture);
+        var template = "Value: {{test.value}}";
+        
+        // Act
+        var result = engine.ProcessTemplate(template);
+        
+        // Assert - German culture uses comma as decimal separator
+        Assert.Equal("Value: 1234,56", result);
+    }
+
+    [Fact]
+    public void Constructor_WithOptionsAndCulture_AppliesBothCorrectly()
+    {
+        // Arrange
+        var jsonData = """
+        [{
+          "name":"test_item",
+          "numeric_value": 42.75,
+          "unit": "kg"
+        }]
+        """;
+        
+        var options = new TemplateEngineOptions
+        {
+            Culture = new CultureInfo("fr-FR"),
+            ConfigureJsonOptions = jsonOptions =>
+            {
+                jsonOptions.AllowTrailingCommas = true;
+            }
+        };
+        
+        // Act
+        var engine = new TemplateEngine(jsonData, options);
+        var template = "Value: {{test_item.value}}";
+        var result = engine.ProcessTemplate(template);
+        
+        // Assert - French culture uses comma as decimal separator
+        Assert.Equal("Value: 42,75", result);
     }
 }
