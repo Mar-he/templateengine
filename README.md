@@ -1,121 +1,178 @@
-# Simple Template Engine
+# TemplateEngine
 
-A flexible and extensible template engine for .NET 8.0 that supports JSON data processing, token replacement, unit conversion, and value formatting with a clean modifier system.
+A powerful and flexible template engine for .NET that processes templates with token replacement, unit conversion, value formatting, and comprehensive culture support.
 
 ## Features
 
-- **JSON Data Processing**: Parse JSON arrays into template items with automatic property mapping
-- **Token Replacement**: Replace template tokens with actual values using `{{name.property}}` syntax
-- **Unit Conversion**: Convert between different units (speed, temperature, weight, distance, fuel consumption)
-- **Value Formatting**: Round numeric values to specified decimal places
-- **Extensible Modifier System**: Add custom modifiers using a clean Chain of Responsibility pattern
-- **Type Safety**: Support for both numeric and string values with automatic type handling
-- **Culture-Invariant**: Consistent number formatting regardless of system locale
+- **Token-based templating** with `{{item.property}}` syntax
+- **Value modifiers** for rounding and unit conversion
+- **Culture-aware formatting** for internationalization
+- **Unit conversion** between common measurement units
+- **Dependency Injection support** with fluent configuration API
+- **Extensible modifier system** for custom value transformations
+- **JSON data loading** with configurable serialization options
+
+## Installation
+
+Add the package reference to your project:
+
+```xml
+<PackageReference Include="TemplateEngine" Version="1.0.0" />
+```
 
 ## Quick Start
-
-### Installation
-
-Clone the repository and build the project:
-
-```bash
-git clone <repository-url>
-cd TemplateEngine
-dotnet build
-```
-
-### Running Tests
-
-The project includes a comprehensive test suite with 40+ tests:
-
-```bash
-dotnet test
-```
 
 ### Basic Usage
 
 ```csharp
-using TemplateEngine;
-
-// JSON data with template items
+// JSON data with numeric and string values
 var jsonData = """
 [{
   "name": "speed",
   "numeric_value": 100,
   "unit": "km/h"
 }, {
-  "name": "description", 
-  "string_value": "high performance vehicle"
+  "name": "type",
+  "string_value": "electric vehicle"
 }]
 """;
 
-// Create template engine
-var engine = new SimpleTemplateEngine(jsonData);
+var engine = new TemplateEngine(jsonData);
+var template = "Vehicle: {{type.value}}, Speed: {{speed.value}} {{speed.unit}}";
+var result = engine.ProcessTemplate(template);
+// Output: "Vehicle: electric vehicle, Speed: 100 km/h"
+```
 
-// Process templates
-var result = engine.ProcessTemplate("Speed: {{speed.value}} {{speed.unit}}");
-// Output: "Speed: 100 km/h"
+### With Value Modifiers
 
-var description = engine.ProcessTemplate("Type: {{description.value}}");
-// Output: "Type: high performance vehicle"
+```csharp
+var template = "Speed: {{speed.value:convert(mph):round(1)}} mph";
+var result = engine.ProcessTemplate(template);
+// Output: "Speed: 62.1 mph"
 ```
 
 ## Template Syntax
 
-### Basic Tokens
-
-- `{{name.value}}` - Gets the value (numeric_value or string_value)
-- `{{name.unit}}` - Gets the unit of measurement
-- `{{name.name}}` - Gets the name of the item
-
-### Modifiers
-
-Modifiers can be chained using the `:` separator:
-
-#### Rounding
-```csharp
-{{speed.value:round(2)}}        // Round to 2 decimal places
-{{speed.value:round(0)}}        // Round to whole number
+### Token Format
+```
+{{item_name.property:modifier1:modifier2}}
 ```
 
-#### Unit Conversion
+### Available Properties
+- `value` - The numeric or string value
+- `unit` - The unit of measurement
+- `name` - The item name
+
+### Available Modifiers
+
+#### Round Modifier
 ```csharp
-{{speed.value:convert(mph)}}    // Convert km/h to mph
-{{temp.value:convert(fahrenheit)}} // Convert celsius to fahrenheit
-{{weight.value:convert(lbs)}}   // Convert kg to pounds
+{{speed.value:round(2)}}  // Rounds to 2 decimal places
+{{speed.value:round(0)}}  // Rounds to integer
 ```
 
-#### Chained Modifiers
+#### Convert Modifier
+```csharp
+{{speed.value:convert(mph)}}           // km/h to mph
+{{consumption.value:convert(mpg)}}     // l/100km to mpg
+{{temperature.value:convert(fahrenheit)}} // celsius to fahrenheit
+```
+
+#### Chaining Modifiers
 ```csharp
 {{speed.value:convert(mph):round(1)}}  // Convert then round
-{{temp.value:round(0):convert(fahrenheit)}} // Round then convert
+{{fuel.value:round(2):convert(mpg)}}   // Round then convert
 ```
 
-## Supported Unit Conversions
+## Dependency Injection
 
-| Category | From | To |
-|----------|------|-----|
-| **Speed** | km/h | mph, m/s, knots |
-| **Temperature** | celsius | fahrenheit, kelvin |
-| **Weight** | kg | lbs, oz |
-| **Distance** | m | ft, inches, miles, km |
-| **Fuel Consumption** | l/100km | mpg, mpg_uk, km/l |
-
-## Advanced Features
-
-### Custom JSON Options
+### Basic Registration
 
 ```csharp
-var engine = new SimpleTemplateEngine(jsonData, options =>
+// In Program.cs or Startup.cs
+services.AddTemplateEngine(jsonData);
+
+// With options
+services.AddTemplateEngine(jsonData, options =>
 {
-    options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    options.AllowTrailingCommas = true;
+    options.Culture = new CultureInfo("de-DE");
+    options.ConfigureJsonOptions = jsonOptions =>
+    {
+        jsonOptions.AllowTrailingCommas = true;
+    };
 });
 ```
 
-### Custom Modifiers
+### Using Items Directly
 
-Create your own modifiers by implementing `IValueModifier`:
+```csharp
+var items = new List<TemplateItem>
+{
+    new() { Name = "speed", NumericValue = 120, Unit = "km/h" }
+};
+
+services.AddTemplateEngine(items, new CultureInfo("en-US"));
+```
+
+### Builder Pattern
+
+```csharp
+services.AddTemplateEngine(builder =>
+{
+    builder.UseJsonData(jsonData)
+           .UseCulture(new CultureInfo("fr-FR"))
+           .AddModifier<CustomModifier>()
+           .ConfigureJsonOptions(options =>
+           {
+               options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+           });
+});
+```
+
+### Using in Controllers
+
+```csharp
+[ApiController]
+public class ReportController : ControllerBase
+{
+    private readonly ITemplateEngine _templateEngine;
+
+    public ReportController(ITemplateEngine templateEngine)
+    {
+        _templateEngine = templateEngine;
+    }
+
+    [HttpGet]
+    public string GenerateReport()
+    {
+        var template = "Speed: {{vehicle_speed.value:convert(mph):round(1)}} mph";
+        return _templateEngine.ProcessTemplate(template);
+    }
+}
+```
+
+## Culture Support
+
+The TemplateEngine supports culture-specific formatting:
+
+```csharp
+// German culture (comma as decimal separator)
+var options = new TemplateEngineOptions
+{
+    Culture = new CultureInfo("de-DE")
+};
+var engine = new TemplateEngine(jsonData, options);
+
+// French culture
+services.AddTemplateEngine(jsonData, options =>
+{
+    options.Culture = new CultureInfo("fr-FR");
+});
+```
+
+## Custom Modifiers
+
+Create custom modifiers by implementing `IValueModifier`:
 
 ```csharp
 public class MultiplyModifier : IValueModifier
@@ -135,136 +192,161 @@ public class MultiplyModifier : IValueModifier
     }
 }
 
-// Register the custom modifier
+// Register the modifier
 engine.RegisterModifier(new MultiplyModifier());
 
-// Use it in templates
-var result = engine.ProcessTemplate("{{value.name:multiply(2):round(1)}}");
+// Or via DI
+services.AddTemplateEngine(builder =>
+{
+    builder.UseJsonData(jsonData)
+           .AddModifier<MultiplyModifier>();
+});
 ```
+
+## Supported Unit Conversions
+
+### Speed
+- `km/h` ↔ `mph`
+
+### Fuel Consumption
+- `l/100km` ↔ `mpg`
+
+### Temperature
+- `celsius` ↔ `fahrenheit`
 
 ## JSON Data Format
 
-The engine expects JSON arrays with the following structure:
+The template engine expects JSON data in the following format:
 
 ```json
-[{
-  "name": "item_name",
-  "numeric_value": 123.45,  // Optional: for numeric values
-  "string_value": "text",   // Optional: for string values  
-  "unit": "kg"             // Optional: unit of measurement
-}]
+[
+  {
+    "name": "item_name",
+    "numeric_value": 123.45,
+    "unit": "kg"
+  },
+  {
+    "name": "another_item",
+    "string_value": "text value"
+  }
+]
 ```
 
-**Important**: Only one of `numeric_value` or `string_value` should be present per item. The `value` property will return `string_value` if present, otherwise `numeric_value`.
+### Important Notes
+- Each item must have a unique `name`
+- Items can have either `numeric_value` OR `string_value`, not both
+- `unit` is optional and only applicable to numeric values
+- Property names are case-insensitive
+- Snake_case naming is supported by default
 
-## Architecture
+## Configuration Options
 
-The template engine follows clean code principles and design patterns:
+### TemplateEngineOptions
 
-- **Strategy Pattern**: Each modifier is a separate strategy
-- **Chain of Responsibility**: Modifiers are processed in sequence
-- **Open/Closed Principle**: Extensible for new modifiers without changing existing code
-- **Single Responsibility**: Each class has a clear, focused purpose
-
-### Project Structure
-
+```csharp
+var options = new TemplateEngineOptions
+{
+    Culture = new CultureInfo("en-US"),           // Default: InvariantCulture
+    ConfigureJsonOptions = jsonOptions =>         // Optional JSON configuration
+    {
+        jsonOptions.AllowTrailingCommas = true;
+        jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    }
+};
 ```
-TemplateEngine/
-├── TemplateEngine/
-│   ├── SimpleTemplateEngine.cs     # Main template engine
-│   ├── TemplateItem.cs            # Data model for template items
-│   ├── UnitConverter.cs           # Unit conversion logic
-│   └── Modifiers/
-│       ├── IValueModifier.cs      # Modifier interface
-│       ├── ModifierProcessor.cs   # Modifier coordination
-│       ├── RoundModifier.cs       # Rounding functionality
-│       ��── ConvertModifier.cs     # Unit conversion functionality
-└── TemplateEngine.Tests/
-    ├── SimpleTemplateEngineTests.cs  # Core template engine tests
-    ├── TemplateItemTests.cs          # TemplateItem model tests
-    ├── ModifierTests.cs              # Modifier system tests
-    └── UnitConverterTests.cs         # Unit conversion tests
+
+### JSON Serialization Options
+
+You can customize JSON deserialization:
+
+```csharp
+services.AddTemplateEngine(jsonData, options =>
+{
+    options.ConfigureJsonOptions = jsonOptions =>
+    {
+        jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        jsonOptions.AllowTrailingCommas = true;
+        jsonOptions.ReadCommentHandling = JsonCommentHandling.Skip;
+    };
+});
 ```
+
+## Error Handling
+
+- **Missing items**: Tokens for non-existent items remain unchanged
+- **Invalid properties**: Tokens for invalid properties remain unchanged
+- **Invalid modifiers**: Unknown modifiers are ignored
+- **Invalid conversions**: Conversion failures return the original value
+- **String values with numeric modifiers**: Modifiers are ignored for string values
 
 ## Examples
 
-### Complex Template Processing
+### Vehicle Dashboard
 
 ```csharp
-var jsonData = """
+var vehicleData = """
 [{
-  "name": "car_speed",
-  "numeric_value": 120.5,
+  "name": "speed",
+  "numeric_value": 95.5,
   "unit": "km/h"
 }, {
   "name": "fuel_consumption",
   "numeric_value": 7.2,
   "unit": "l/100km"
 }, {
-  "name": "temperature",
-  "numeric_value": 22.5,
+  "name": "engine_temp",
+  "numeric_value": 87.5,
   "unit": "celsius"
 }]
 """;
 
-var engine = new SimpleTemplateEngine(jsonData);
-
 var template = """
-Vehicle Stats:
-- Speed: {{car_speed.value:convert(mph):round(1)}} mph
-- Consumption: {{fuel_consumption.value:convert(mpg):round(1)}} mpg  
-- Temperature: {{temperature.value:convert(fahrenheit):round(0)}}°F
+Speed: {{speed.value:round(0)}} {{speed.unit}} ({{speed.value:convert(mph):round(1)}} mph)
+Fuel: {{fuel_consumption.value:convert(mpg):round(1)}} mpg
+Engine: {{engine_temp.value:convert(fahrenheit):round(0)}}°F
 """;
 
 var result = engine.ProcessTemplate(template);
+// Output:
+// Speed: 96 km/h (59.3 mph)
+// Fuel: 32.7 mpg
+// Engine: 190°F
 ```
 
-Output:
+### Multilingual Reports
+
+```csharp
+// German locale
+var germanOptions = new TemplateEngineOptions
+{
+    Culture = new CultureInfo("de-DE")
+};
+
+var germanEngine = new TemplateEngine(data, germanOptions);
+var result = germanEngine.ProcessTemplate("Preis: {{price.value}} EUR");
+// Output: "Preis: 1234,56 EUR" (comma as decimal separator)
 ```
-Vehicle Stats:
-- Speed: 74.9 mph
-- Consumption: 32.7 mpg
-- Temperature: 72°F
-```
-
-### Error Handling
-
-The engine gracefully handles errors:
-
-- **Missing items**: Unknown tokens remain unchanged in output
-- **Invalid conversions**: Returns original value if conversion not supported
-- **String values with numeric modifiers**: Ignores modifiers, returns string as-is
-- **Malformed JSON**: Returns empty item list
 
 ## Testing
 
-Run the comprehensive test suite:
+The project includes comprehensive tests covering:
+- Basic template processing
+- Modifier functionality
+- Culture support
+- Dependency injection scenarios
+- Error handling
+- Custom modifiers
 
+Run tests with:
 ```bash
 dotnet test
 ```
 
-The project includes 34+ tests covering:
-- Basic token replacement
-- All unit conversions
-- Modifier chaining
-- Error conditions
-- Custom modifiers
-- JSON parsing options
-
 ## Requirements
 
 - .NET 8.0 or later
-- System.Text.Json (included in .NET 8.0)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+- Microsoft.Extensions.DependencyInjection (for DI features)
 
 ## License
 
-This project is open source. See LICENSE file for details.
+This project is licensed under the MIT License.
