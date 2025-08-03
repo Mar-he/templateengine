@@ -1,4 +1,5 @@
 using TemplateEngine.Modifiers;
+using TemplateEngine.Events;
 
 namespace TemplateEngine;
 
@@ -7,6 +8,31 @@ namespace TemplateEngine;
 /// </summary>
 public interface ITemplateEngine
 {
+    /// <summary>
+    /// Event raised when template processing starts.
+    /// </summary>
+    event EventHandler<TemplateProcessingEventArgs>? TemplateProcessingStarted;
+    
+    /// <summary>
+    /// Event raised when template processing completes.
+    /// </summary>
+    event EventHandler<TemplateProcessingEventArgs>? TemplateProcessingCompleted;
+    
+    /// <summary>
+    /// Event raised when a token is being processed.
+    /// </summary>
+    event EventHandler<TokenProcessingEventArgs>? TokenProcessing;
+    
+    /// <summary>
+    /// Event raised when a modifier is being applied.
+    /// </summary>
+    event EventHandler<ModifierProcessingEventArgs>? ModifierProcessing;
+    
+    /// <summary>
+    /// Event raised when an error occurs during processing.
+    /// </summary>
+    event EventHandler<TemplateEngineErrorEventArgs>? ErrorOccurred;
+
     /// <summary>
     /// Processes a template string, replacing tokens with actual values.
     /// </summary>
