@@ -10,7 +10,7 @@ namespace TemplateEngine;
 /// <summary>
 /// A template engine that processes templates with token replacement, unit conversion, and value formatting.
 /// </summary>
-public class TemplateEngine : ITemplateEngine
+public sealed class TemplateEngine : ITemplateEngine
 {
     private readonly List<TemplateItem> _items;
     private readonly Regex _tokenRegex = new Regex(@"\{\{(\w+)\.(\w+)(?::([^}]+))?\}\}", RegexOptions.Compiled);
@@ -176,7 +176,7 @@ public class TemplateEngine : ITemplateEngine
                     IsSuccessful = false,
                     CorrelationId = correlationId
                 });
-                
+
                 return token; // Return original token if item not found
             }
 
@@ -201,7 +201,7 @@ public class TemplateEngine : ITemplateEngine
                     IsSuccessful = false,
                     CorrelationId = correlationId
                 });
-                
+
                 return token;
             }
 
@@ -352,7 +352,7 @@ public class TemplateEngine : ITemplateEngine
     /// Raises the TemplateProcessingStarted event.
     /// </summary>
     /// <param name="e">The event arguments.</param>
-    protected virtual void OnTemplateProcessingStarted(TemplateProcessingEventArgs e)
+    private void OnTemplateProcessingStarted(TemplateProcessingEventArgs e)
     {
         TemplateProcessingStarted?.Invoke(this, e);
     }
@@ -361,7 +361,7 @@ public class TemplateEngine : ITemplateEngine
     /// Raises the TemplateProcessingCompleted event.
     /// </summary>
     /// <param name="e">The event arguments.</param>
-    protected virtual void OnTemplateProcessingCompleted(TemplateProcessingEventArgs e)
+    private void OnTemplateProcessingCompleted(TemplateProcessingEventArgs e)
     {
         TemplateProcessingCompleted?.Invoke(this, e);
     }
@@ -370,7 +370,7 @@ public class TemplateEngine : ITemplateEngine
     /// Raises the TokenProcessing event.
     /// </summary>
     /// <param name="e">The event arguments.</param>
-    protected virtual void OnTokenProcessing(TokenProcessingEventArgs e)
+    private void OnTokenProcessing(TokenProcessingEventArgs e)
     {
         TokenProcessing?.Invoke(this, e);
     }
@@ -379,7 +379,7 @@ public class TemplateEngine : ITemplateEngine
     /// Raises the ModifierProcessing event.
     /// </summary>
     /// <param name="e">The event arguments.</param>
-    protected virtual void OnModifierProcessing(ModifierProcessingEventArgs e)
+    private void OnModifierProcessing(ModifierProcessingEventArgs e)
     {
         ModifierProcessing?.Invoke(this, e);
     }
@@ -388,7 +388,7 @@ public class TemplateEngine : ITemplateEngine
     /// Raises the ErrorOccurred event.
     /// </summary>
     /// <param name="e">The event arguments.</param>
-    protected virtual void OnErrorOccurred(TemplateEngineErrorEventArgs e)
+    private void OnErrorOccurred(TemplateEngineErrorEventArgs e)
     {
         ErrorOccurred?.Invoke(this, e);
     }

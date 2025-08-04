@@ -198,7 +198,7 @@ public class TemplateEngineEventsTests
             var result = engine.ProcessTemplate("{{test.value:invalidmodifier(abc)}}");
 
             // If we get here, no exception was thrown - let's see what we got
-            Assert.True(false, $"Expected InvalidModifierException but got result: {result}");
+            Assert.Fail($"Expected InvalidModifierException but got result: {result}");
         }
         catch (InvalidModifierException ex)
         {
@@ -219,7 +219,7 @@ public class TemplateEngineEventsTests
         catch (Exception ex)
         {
             // Some other exception was thrown
-            Assert.True(false, $"Expected InvalidModifierException but got: {ex.GetType().Name}: {ex.Message}");
+            Assert.Fail($"Expected InvalidModifierException but got: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

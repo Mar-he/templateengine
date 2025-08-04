@@ -39,9 +39,9 @@ var jsonData = """
 
 var engine = new TemplateEngine(jsonData);
 var template = "Vehicle: {{type.value}}, Speed: {{speed.value}} {{speed.unit}}";
-var result = engine.ProcessTemplate(template);
+
+Console.WriteLine(result); // Output: Vehicle: electric vehicle, Speed: 100 km/h
 // Output: "Vehicle: electric vehicle, Speed: 100 km/h"
-```
 
 ### With Value Modifiers
 
@@ -51,9 +51,9 @@ var result = engine.ProcessTemplate(template);
 // Output: "Speed: 62.1 mph"
 ```
 
-## Template Syntax
+### Dependency Injection
 
-### Token Format
+The TemplateEngine can be integrated into .NET's dependency injection system:
 ```
 {{item_name.property:modifier1:modifier2}}
 ```
