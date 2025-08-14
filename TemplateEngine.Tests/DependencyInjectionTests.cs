@@ -15,7 +15,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var jsonData = """
         [{
-          "name":"test",
+          "category":"test",
           "numeric_value": 42,
           "unit": "kg"
         }]
@@ -39,7 +39,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var jsonData = """
         [{
-          "name":"test",
+          "category":"test",
           "numeric_value": 1234.56,
           "unit": "kg"
         }]
@@ -65,7 +65,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 100, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 100, Unit = "km/h" }
         };
 
         // Act
@@ -86,7 +86,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var items = new List<TemplateItem>
         {
-            new() { Name = "price", NumericValue = 1234.56, Unit = "EUR" }
+            new() { Category = "price", NumericValue = 1234.56, Unit = "EUR" }
         };
 
         // Act
@@ -106,7 +106,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", StringValue = "factory created" }
+            new() { Category = "test", StringValue = "factory created" }
         };
 
         // Act
@@ -127,7 +127,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var jsonData = """
         [{
-          "name":"speed",
+          "category":"speed",
           "numeric_value": 100,
           "unit": "km/h"
         }]
@@ -157,7 +157,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var items = new List<TemplateItem>
         {
-            new() { Name = "temp", NumericValue = 25.5, Unit = "celsius" }
+            new() { Category = "temp", NumericValue = 25.5, Unit = "celsius" }
         };
 
         // Act
@@ -183,7 +183,7 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
         var jsonData = """
         [{
-          "name":"test",
+          "category":"test",
           "numeric_value": 42.5,
           "unit": "kg"
         }]
@@ -234,8 +234,8 @@ public class DependencyInjectionTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var jsonData1 = """[{"name":"first","string_value":"first value"}]""";
-        var jsonData2 = """[{"name":"second","string_value":"second value"}]""";
+        var jsonData1 = """[{"category":"first","string_value":"first value"}]""";
+        var jsonData2 = """[{"category":"second","string_value":"second value"}]""";
 
         // Act - Add multiple registrations
         services.AddTemplateEngine(jsonData1);

@@ -10,7 +10,7 @@ public class TemplateItemTests
         // Arrange
         var item = new TemplateItem
         {
-            Name = "test",
+            Category = "test",
             StringValue = "string",
             NumericValue = 42
         };
@@ -25,7 +25,7 @@ public class TemplateItemTests
         // Arrange
         var item = new TemplateItem
         {
-            Name = "test",
+            Category = "test",
             StringValue = null,
             NumericValue = 42
         };
@@ -40,7 +40,7 @@ public class TemplateItemTests
         // Arrange
         var item = new TemplateItem
         {
-            Name = "test",
+            Category = "test",
             StringValue = null,
             NumericValue = null
         };
@@ -56,7 +56,7 @@ public class TemplateItemTests
         var item = new TemplateItem();
         
         // Assert
-        Assert.Equal(string.Empty, item.Name);
+        Assert.Equal(string.Empty, item.Category);
         Assert.Null(item.NumericValue);
         Assert.Null(item.StringValue);
         Assert.Null(item.Unit);

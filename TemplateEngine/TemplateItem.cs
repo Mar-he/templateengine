@@ -8,7 +8,7 @@ public class TemplateItem
     /// <summary>
     /// The name of the template item.
     /// </summary>
-    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
     
     /// <summary>
     /// The numeric value of the item, if applicable.

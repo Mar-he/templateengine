@@ -12,7 +12,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"foo",
+          "category":"foo",
           "numeric_value": 2,
           "unit": "kg"
         }]
@@ -34,7 +34,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"foo",
+          "category":"foo",
           "string_value": "electric power"
         }]
         """;
@@ -55,11 +55,11 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"weight",
+          "category":"weight",
           "numeric_value": 2.5,
           "unit": "kg"
         }, {
-          "name":"type",
+          "category":"type",
           "string_value": "electric power"
         }]
         """;
@@ -80,7 +80,7 @@ public class TemplateEngineTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "foo", NumericValue = 42, Unit = "units" }
+            new() { Category = "foo", NumericValue = 42, Unit = "units" }
         };
         
         var engine = new TemplateEngine(items);
@@ -99,7 +99,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"foo",
+          "category":"foo",
           "numeric_value": 2,
           "unit": "kg"
         }]
@@ -121,7 +121,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"foo",
+          "category":"foo",
           "numeric_value": 2,
           "unit": "kg"
         }]
@@ -143,7 +143,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"foo",
+          "category":"foo",
           "string_value": "test"
         }]
         """;
@@ -164,7 +164,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "NAME":"FOO",
+          "CATEGORY":"FOO",
           "NUMERIC_VALUE": 123,
           "UNIT": "KG"
         }]
@@ -210,7 +210,7 @@ public class TemplateEngineTests
         
         // Assert - Should have one item but with default/null values since property mapping failed
         Assert.Single(items);
-        Assert.True(string.IsNullOrEmpty(items[0].Name));
+        Assert.True(string.IsNullOrEmpty(items[0].Category));
         Assert.Null(items[0].NumericValue);
         Assert.Null(items[0].StringValue);
         Assert.Null(items[0].Unit);
@@ -222,7 +222,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"test_item",
+          "category":"test_item",
           "numeric_value": 42.5,
           "unit": "kg"
         }]
@@ -234,7 +234,7 @@ public class TemplateEngineTests
         
         // Assert - Should parse correctly with default options
         Assert.Single(items);
-        Assert.Equal("test_item", items[0].Name);
+        Assert.Equal("test_item", items[0].Category);
         Assert.Equal(42.5, items[0].NumericValue);
         Assert.Equal("kg", items[0].Unit);
     }
@@ -245,7 +245,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"test_item",
+          "category":"test_item",
           "numeric_value": 42.5,
           "unit": "kg"
         }]
@@ -268,7 +268,7 @@ public class TemplateEngineTests
         
         // Assert - Should still work with default case insensitive and snake_case settings
         Assert.Single(items);
-        Assert.Equal("test_item", items[0].Name);
+        Assert.Equal("test_item", items[0].Category);
         Assert.Equal(42.5, items[0].NumericValue);
         Assert.Equal("kg", items[0].Unit);
     }
@@ -279,7 +279,7 @@ public class TemplateEngineTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 1234.56, Unit = "kg" }
+            new() { Category = "test", NumericValue = 1234.56, Unit = "kg" }
         };
         
         var germanCulture = new CultureInfo("de-DE");
@@ -299,7 +299,7 @@ public class TemplateEngineTests
         // Arrange
         var jsonData = """
         [{
-          "name":"test_item",
+          "category":"test_item",
           "numeric_value": 42.75,
           "unit": "kg"
         }]

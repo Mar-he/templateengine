@@ -12,7 +12,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 123.456789, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 123.456789, Unit = "km/h" }
         };
         
         var engine = new TemplateEngine(items);
@@ -29,9 +29,9 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 100, Unit = "km/h" },
-            new() { Name = "consumption", NumericValue = 8.5, Unit = "l/100km" },
-            new() { Name = "temp", NumericValue = 25, Unit = "celsius" }
+            new() { Category = "speed", NumericValue = 100, Unit = "km/h" },
+            new() { Category = "consumption", NumericValue = 8.5, Unit = "l/100km" },
+            new() { Category = "temp", NumericValue = 25, Unit = "celsius" }
         };
         
         var engine = new TemplateEngine(items);
@@ -48,7 +48,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 100, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 100, Unit = "km/h" }
         };
         
         var engine = new TemplateEngine(items);
@@ -64,7 +64,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 100.789, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 100.789, Unit = "km/h" }
         };
         
         var engine = new TemplateEngine(items);
@@ -80,7 +80,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "weight", NumericValue = 100, Unit = "kg" }
+            new() { Category = "weight", NumericValue = 100, Unit = "kg" }
         };
         
         var engine = new TemplateEngine(items);
@@ -98,7 +98,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "type", StringValue = "electric power" }
+            new() { Category = "type", StringValue = "electric power" }
         };
         
         var engine = new TemplateEngine(items);
@@ -116,15 +116,15 @@ public class ModifierTests
         // Arrange
         var jsonData = """
         [{
-          "name": "car_speed",
+          "category": "car_speed",
           "numeric_value": 120.5,
           "unit": "km/h"
         }, {
-          "name": "fuel_consumption",
+          "category": "fuel_consumption",
           "numeric_value": 7.2,
           "unit": "l/100km"
         }, {
-          "name": "temperature",
+          "category": "temperature",
           "numeric_value": 22.5,
           "unit": "celsius"
         }]
@@ -148,7 +148,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 10, Unit = "units" }
+            new() { Category = "test", NumericValue = 10, Unit = "units" }
         };
         
         var engine = new TemplateEngine(items);
@@ -170,7 +170,7 @@ public class ModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 5.555, Unit = "km/h" }
+            new() { Category = "test", NumericValue = 5.555, Unit = "km/h" }
         };
         
         var engine = new TemplateEngine(items);

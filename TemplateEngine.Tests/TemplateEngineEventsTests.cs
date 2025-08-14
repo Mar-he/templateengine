@@ -17,7 +17,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 60, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 60, Unit = "km/h" }
         };
         var engine = new TemplateEngine(items);
         
@@ -42,7 +42,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 60, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 60, Unit = "km/h" }
         };
         var engine = new TemplateEngine(items);
         
@@ -68,7 +68,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 60, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 60, Unit = "km/h" }
         };
         var engine = new TemplateEngine(items);
         
@@ -127,7 +127,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 60.123, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 60.123, Unit = "km/h" }
         };
         var engine = new TemplateEngine(items);
         
@@ -154,7 +154,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "speed", NumericValue = 100, Unit = "km/h" }
+            new() { Category = "speed", NumericValue = 100, Unit = "km/h" }
         };
         var engine = new TemplateEngine(items);
         
@@ -185,7 +185,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 42 }
+            new() { Category = "test", NumericValue = 42 }
         };
         var engine = new TemplateEngine(items);
         
@@ -198,7 +198,7 @@ public class TemplateEngineEventsTests
             var result = engine.ProcessTemplate("{{test.value:invalidmodifier(abc)}}");
 
             // If we get here, no exception was thrown - let's see what we got
-            Assert.True(false, $"Expected InvalidModifierException but got result: {result}");
+            Assert.Fail($"Expected InvalidModifierException but got result: {result}");
         }
         catch (InvalidModifierException ex)
         {
@@ -219,7 +219,7 @@ public class TemplateEngineEventsTests
         catch (Exception ex)
         {
             // Some other exception was thrown
-            Assert.True(false, $"Expected InvalidModifierException but got: {ex.GetType().Name}: {ex.Message}");
+            Assert.Fail($"Expected InvalidModifierException but got: {ex.GetType().Name}: {ex.Message}");
         }
     }
 
@@ -229,7 +229,7 @@ public class TemplateEngineEventsTests
         // Arrange - Test a realistic error scenario with round modifier
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 42.456 }
+            new() { Category = "test", NumericValue = 42.456 }
         };
         var engine = new TemplateEngine(items);
         
@@ -261,7 +261,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 42 }
+            new() { Category = "test", NumericValue = 42 }
         };
         var engine = new TemplateEngine(items);
         
@@ -284,7 +284,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 42 }
+            new() { Category = "test", NumericValue = 42 }
         };
         var engine = new TemplateEngine(items);
         
@@ -319,7 +319,7 @@ public class TemplateEngineEventsTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "price", NumericValue = 1234.56 }
+            new() { Category = "price", NumericValue = 1234.56 }
         };
         var engine = new TemplateEngine(items, new CultureInfo("de-DE"));
         

@@ -33,7 +33,7 @@ public class InvalidModifierTests
         // Arrange
         var items = new List<TemplateItem>
         {
-            new() { Name = "test", NumericValue = 42.0 }
+            new() { Category = "test", NumericValue = 42.0 }
         };
         var engine = new TemplateEngine(items);
         

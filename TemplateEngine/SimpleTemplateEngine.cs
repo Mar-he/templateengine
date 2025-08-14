@@ -162,7 +162,7 @@ public class TemplateEngine : ITemplateEngine
 
         try
         {
-            var item = _items.FirstOrDefault(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+            var item = _items.FirstOrDefault(i => i.Category.Equals(itemName, StringComparison.OrdinalIgnoreCase));
             if (item == null)
             {
                 OnTokenProcessing(new TokenProcessingEventArgs
@@ -184,7 +184,7 @@ public class TemplateEngine : ITemplateEngine
             {
                 "value" => item.Value,
                 "unit" => item.Unit ?? string.Empty,
-                "name" => item.Name,
+                "name" => item.Category,
                 _ => null
             };
 
