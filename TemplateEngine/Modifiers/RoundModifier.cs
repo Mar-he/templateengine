@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace TemplateEngine.Modifiers;
 
 /// <summary>
@@ -9,8 +7,14 @@ public class RoundModifier : IValueModifier
 {
     public bool CanHandle(string modifierString)
     {
-        return modifierString.StartsWith("round(", StringComparison.OrdinalIgnoreCase) && 
-               modifierString.EndsWith(")");
+        if (!modifierString.StartsWith("round(", StringComparison.OrdinalIgnoreCase) || 
+            !modifierString.EndsWith(")"))
+        {
+            return false;
+        }
+
+        var parameter = ExtractParameter(modifierString);
+        return int.TryParse(parameter, out _);
     }
 
     public void Apply(ModifierContext context, string modifierString)

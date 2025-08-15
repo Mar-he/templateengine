@@ -4,7 +4,7 @@ using TemplateEngine.Events;
 namespace TemplateEngine;
 
 /// <summary>
-/// Interface for the template engine that processes templates with token replacement.
+/// Interface for the template engine that processes templates with TemplateDto structure.
 /// </summary>
 public interface ITemplateEngine
 {
@@ -34,11 +34,11 @@ public interface ITemplateEngine
     event EventHandler<TemplateEngineErrorEventArgs>? ErrorOccurred;
 
     /// <summary>
-    /// Processes a template string, replacing tokens with actual values.
+    /// Processes a template DTO with variables, replacing variable placeholders with actual values.
     /// </summary>
-    /// <param name="template">The template string containing tokens to replace.</param>
-    /// <returns>The processed template with tokens replaced by actual values.</returns>
-    string ProcessTemplate(string template);
+    /// <param name="templateDto">The template DTO containing the template literal and variable definitions.</param>
+    /// <returns>The processed template with variables replaced by actual values.</returns>
+    string ProcessTemplate(TemplateDto templateDto);
 
     /// <summary>
     /// Registers a custom modifier with the template engine.

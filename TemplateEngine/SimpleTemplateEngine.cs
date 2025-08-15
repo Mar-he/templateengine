@@ -8,12 +8,12 @@ using TemplateEngine.Events;
 namespace TemplateEngine;
 
 /// <summary>
-/// A template engine that processes templates with token replacement, unit conversion, and value formatting.
+/// A template engine that processes templates with variable replacement using TemplateDto structure.
 /// </summary>
 public class TemplateEngine : ITemplateEngine
 {
     private readonly List<TemplateItem> _items;
-    private readonly Regex _tokenRegex = new Regex(@"\{\{(\w+)\.(\w+)(?::([^}]+))?\}\}", RegexOptions.Compiled);
+    private readonly Regex _variableRegex = new Regex(@"\{\{(\w+)\}\}", RegexOptions.Compiled);
     private readonly ModifierProcessor _modifierProcessor;
     private readonly CultureInfo _culture;
     private string? _currentCorrelationId;
@@ -89,28 +89,34 @@ public class TemplateEngine : ITemplateEngine
     }
 
     /// <summary>
-    /// Processes a template string, replacing tokens with actual values.
+    /// Processes a template DTO with variables, replacing variable placeholders with actual values.
     /// </summary>
-    /// <param name="template">The template string containing tokens to replace.</param>
-    /// <returns>The processed template with tokens replaced by actual values.</returns>
-    public string ProcessTemplate(string template)
+    /// <param name="templateDto">The template DTO containing the template literal and variable definitions.</param>
+    /// <returns>The processed template with variables replaced by actual values.</returns>
+    public string ProcessTemplate(TemplateDto templateDto)
     {
+        ArgumentNullException.ThrowIfNull(templateDto);
+        if (string.IsNullOrEmpty(templateDto.TemplateLiteral)) throw new ArgumentException("Template literal cannot be null or empty.", nameof(templateDto));
+
         var correlationId = Guid.NewGuid().ToString();
-        _currentCorrelationId = correlationId; // Set for modifier events
+        _currentCorrelationId = correlationId;
         var stopwatch = Stopwatch.StartNew();
-        var tokenMatches = _tokenRegex.Matches(template);
+        var template = templateDto.TemplateLiteral;
+        var variableMatches = _variableRegex.Matches(template);
         
         // Raise template processing started event
         OnTemplateProcessingStarted(new TemplateProcessingEventArgs
         {
             Template = template,
-            TokenCount = tokenMatches.Count,
+            TokenCount = variableMatches.Count,
             CorrelationId = correlationId
         });
 
         try
         {
-            var result = _tokenRegex.Replace(template, match => ProcessToken(match, correlationId));
+            ValidateTemplateDto(templateDto);
+            
+            var result = _variableRegex.Replace(template, match => ProcessVariable(match, templateDto.Variables, correlationId));
             
             stopwatch.Stop();
             
@@ -119,7 +125,7 @@ public class TemplateEngine : ITemplateEngine
             {
                 Template = template,
                 Result = result,
-                TokenCount = tokenMatches.Count,
+                TokenCount = variableMatches.Count,
                 Duration = stopwatch.Elapsed,
                 CorrelationId = correlationId
             });
@@ -133,8 +139,8 @@ public class TemplateEngine : ITemplateEngine
             OnErrorOccurred(new TemplateEngineErrorEventArgs
             {
                 Exception = ex,
-                Context = "Template Processing",
-                Details = $"Failed to process template: {template}",
+                Context = "Template DTO Processing",
+                Details = $"Failed to process template DTO: {template}",
                 Severity = ErrorSeverity.Critical,
                 CorrelationId = correlationId
             });
@@ -143,48 +149,69 @@ public class TemplateEngine : ITemplateEngine
         }
         finally
         {
-            _currentCorrelationId = null; // Clear after processing
+            _currentCorrelationId = null;
         }
     }
 
     /// <summary>
-    /// Processes a single token match and raises appropriate events.
+    /// Validates that all variables in the template literal are defined in the Variables dictionary.
     /// </summary>
-    /// <param name="match">The regex match for the token.</param>
-    /// <param name="correlationId">The correlation ID for tracking related events.</param>
-    /// <returns>The processed token value.</returns>
-    private string ProcessToken(Match match, string correlationId)
+    /// <param name="templateDto">The template DTO to validate.</param>
+    /// <exception cref="ArgumentException">Thrown when the DTO is invalid.</exception>
+    private void ValidateTemplateDto(TemplateDto templateDto)
     {
-        var token = match.Value;
-        var itemName = match.Groups[1].Value;
-        var propertyName = match.Groups[2].Value.ToLowerInvariant();
-        var modifiers = match.Groups[3].Success ? match.Groups[3].Value : null;
+        var variableMatches = _variableRegex.Matches(templateDto.TemplateLiteral);
+        var templateVariables = variableMatches.Cast<Match>().Select(m => m.Groups[1].Value).Distinct().ToList();
+        
+        var undefinedVariables = templateVariables.Where(v => !templateDto.Variables.ContainsKey(v)).ToList();
+        
+        if (undefinedVariables.Any())
+        {
+            throw new ArgumentException($"Template DTO is invalid. The following variables are used in the template but not defined in Variables: {string.Join(", ", undefinedVariables)}");
+        }
+    }
+
+    /// <summary>
+    /// Processes a variable match from the template DTO structure.
+    /// </summary>
+    /// <param name="match">The regex match for the variable.</param>
+    /// <param name="variables">The dictionary of variable definitions.</param>
+    /// <param name="correlationId">The correlation ID for tracking related events.</param>
+    /// <returns>The processed variable value.</returns>
+    private string ProcessVariable(Match match, Dictionary<string, TemplateVariable> variables, string correlationId)
+    {
+        var variableName = match.Groups[1].Value;
+        var variableToken = match.Value;
 
         try
         {
-            var item = _items.FirstOrDefault(i => i.Category.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+            // Since we validated the DTO, this should always exist
+            var variable = variables[variableName];
+
+            // Find the item by ID
+            var item = _items.FirstOrDefault(i => i.Category.Equals(variable.Id, StringComparison.OrdinalIgnoreCase));
             if (item == null)
             {
                 OnTokenProcessing(new TokenProcessingEventArgs
                 {
-                    Token = token,
-                    ItemName = itemName,
-                    PropertyName = propertyName,
-                    Modifiers = modifiers,
+                    Token = variableToken,
+                    ItemName = variable.Id,
+                    PropertyName = variable.Source,
+                    Modifiers = variable.Round,
                     RawValue = null,
-                    ProcessedValue = token,
+                    ProcessedValue = variableToken,
                     IsSuccessful = false,
                     CorrelationId = correlationId
                 });
                 
-                return token; // Return original token if item not found
+                return variableToken;
             }
 
-            var rawValue = propertyName switch
+            var rawValue = variable.Source.ToLowerInvariant() switch
             {
-                "value" => item.Value,
-                "unit" => item.Unit ?? string.Empty,
-                "name" => item.Category,
+                "number_value" => (object?)item.NumericValue,
+                "string_value" => (object?)item.StringValue,
+                "unit" => (object?)(item.Unit ?? string.Empty),
                 _ => null
             };
 
@@ -192,29 +219,27 @@ public class TemplateEngine : ITemplateEngine
             {
                 OnTokenProcessing(new TokenProcessingEventArgs
                 {
-                    Token = token,
-                    ItemName = itemName,
-                    PropertyName = propertyName,
-                    Modifiers = modifiers,
+                    Token = variableToken,
+                    ItemName = variable.Id,
+                    PropertyName = variable.Source,
+                    Modifiers = variable.Round,
                     RawValue = null,
-                    ProcessedValue = token,
+                    ProcessedValue = variableToken,
                     IsSuccessful = false,
                     CorrelationId = correlationId
                 });
                 
-                return token;
+                return variableToken;
             }
 
-            var processedValue = propertyName == "value" && !string.IsNullOrEmpty(modifiers)
-                ? ProcessValueWithModifiers(rawValue, modifiers, item.Unit, correlationId)
-                : FormatValue(rawValue);
+            var processedValue = FormatValue(rawValue);
 
             OnTokenProcessing(new TokenProcessingEventArgs
             {
-                Token = token,
-                ItemName = itemName,
-                PropertyName = propertyName,
-                Modifiers = modifiers,
+                Token = variableToken,
+                ItemName = variable.Id,
+                PropertyName = variable.Source,
+                Modifiers = variable.Round,
                 RawValue = rawValue,
                 ProcessedValue = processedValue,
                 IsSuccessful = true,
@@ -228,94 +253,28 @@ public class TemplateEngine : ITemplateEngine
             OnErrorOccurred(new TemplateEngineErrorEventArgs
             {
                 Exception = ex,
-                Context = "Token Processing",
-                Details = $"Failed to process token: {token}",
+                Context = "Variable Processing",
+                Details = $"Failed to process variable: {variableToken}",
                 Severity = ErrorSeverity.Error,
                 CorrelationId = correlationId
             });
 
             OnTokenProcessing(new TokenProcessingEventArgs
             {
-                Token = token,
-                ItemName = itemName,
-                PropertyName = propertyName,
-                Modifiers = modifiers,
+                Token = variableToken,
+                ItemName = variableName,
+                PropertyName = "variable",
+                Modifiers = null,
                 RawValue = null,
-                ProcessedValue = token,
+                ProcessedValue = variableToken,
                 IsSuccessful = false,
                 CorrelationId = correlationId
             });
 
-            // Re-throw the exception after logging events
             throw;
         }
     }
 
-    /// <summary>
-    /// Processes a value with the specified modifiers using the modifier processor.
-    /// </summary>
-    /// <param name="value">The value to process.</param>
-    /// <param name="modifiers">The modifiers to apply (e.g., "convert(mph):round(2)").</param>
-    /// <param name="unit">The current unit of the value.</param>
-    /// <param name="correlationId">The correlation ID for tracking related events.</param>
-    /// <returns>The processed value as a string.</returns>
-    private string ProcessValueWithModifiers(object? value, string modifiers, string? unit, string correlationId)
-    {
-        // Handle non-numeric values
-        if (value is double numericValue)
-        {
-            // Set up event forwarding for this specific call
-            EventHandler<ModifierAppliedEventArgs> handler = (sender, e) => OnModifierProcessing(new ModifierProcessingEventArgs
-            {
-                ModifierName = e.ModifierName,
-                Parameters = e.Parameters,
-                InputValue = e.InputValue,
-                OutputValue = e.OutputValue,
-                InputUnit = e.InputUnit,
-                OutputUnit = e.OutputUnit,
-                IsSuccessful = e.IsSuccessful,
-                CorrelationId = correlationId
-            });
-
-            _modifierProcessor.ModifierApplied += handler;
-            try
-            {
-                return _modifierProcessor.ProcessModifiers(numericValue, unit?.ToLowerInvariant() ?? string.Empty, modifiers);
-            }
-            finally
-            {
-                _modifierProcessor.ModifierApplied -= handler;
-            }
-        }
-        
-        if (value is string || !double.TryParse(value?.ToString(), NumberStyles.Float, _culture, out numericValue))
-        {
-            return value?.ToString() ?? string.Empty;
-        }
-
-        // Set up event forwarding for this specific call
-        EventHandler<ModifierAppliedEventArgs> handler2 = (sender, e) => OnModifierProcessing(new ModifierProcessingEventArgs
-        {
-            ModifierName = e.ModifierName,
-            Parameters = e.Parameters,
-            InputValue = e.InputValue,
-            OutputValue = e.OutputValue,
-            InputUnit = e.InputUnit,
-            OutputUnit = e.OutputUnit,
-            IsSuccessful = e.IsSuccessful,
-            CorrelationId = correlationId
-        });
-
-        _modifierProcessor.ModifierApplied += handler2;
-        try
-        {
-            return _modifierProcessor.ProcessModifiers(numericValue, unit?.ToLowerInvariant() ?? string.Empty, modifiers);
-        }
-        finally
-        {
-            _modifierProcessor.ModifierApplied -= handler2;
-        }
-    }
 
     /// <summary>
     /// Registers a custom modifier with the template engine.
