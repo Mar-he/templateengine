@@ -72,7 +72,7 @@ public class TemplateEngineTests
             TemplateLiteral = "Value: {{value}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
             }
         };
         
@@ -115,6 +115,9 @@ public class TemplateEngineTests
         Assert.Equal("kg", items[0].Unit);
     }
 
+    
+    
+    
     [Fact]
     public void RegisterModifier_CustomModifier_IsRegistered()
     {
@@ -145,6 +148,136 @@ public class TemplateEngineTests
         var itemsAgain = engine.GetItems();
         Assert.Single(itemsAgain);
         Assert.Equal("test", itemsAgain[0].Category);
+    }
+    
+    [Fact]
+    public void GetItems_ReturnsDefensiveCopy2()
+    {
+        // Arrange
+        var items = new List<TemplateItem>
+        {
+            new() { Category = "test", NumericValue = 42.52 }
+        };
+
+        var dto = new TemplateDto()
+        {
+            TemplateLiteral = "This is a test: {{test}}",
+            Variables = new Dictionary<string, TemplateVariable>()
+            {
+                { "test", new TemplateVariable { Id = "test", Source = VariableSource.NumberValue, Round = "round(1)" } }
+            }
+        };
+        
+        var engine = new TemplateEngine(items);
+        
+        // Act
+        var result = engine.ProcessTemplate(dto);
+        
+        
+        // Assert 
+        Assert.Equal("This is a test: 42.5", result);
+    }
+
+    [Fact]
+    public void ProcessTemplate_WithConversionAndRounding_AppliesModifiersInCorrectOrder()
+    {
+        // Arrange
+        var items = new List<TemplateItem>
+        {
+            new() { Category = "speed", NumericValue = 100.0, Unit = "km/h" }
+        };
+        
+        var engine = new TemplateEngine(items);
+        
+        var templateDto = new TemplateDto
+        {
+            TemplateLiteral = "Speed: {{speedValue}} {{speedUnit}}",
+            Variables = new Dictionary<string, TemplateVariable>
+            {
+                ["speedValue"] = new() 
+                { 
+                    Id = "speed", 
+                    Source = VariableSource.NumberValue,
+                    Convert = "mph",
+                    Round = "round(1)"
+                },
+                ["speedUnit"] = new() 
+                { 
+                    Id = "speed", 
+                    Source = VariableSource.Unit
+                }
+            }
+        };
+        
+        // Act
+        var result = engine.ProcessTemplate(templateDto);
+        
+        // Assert - 100 km/h = ~62.137 mph, rounded to 1 decimal place = 62.1
+        Assert.Equal("Speed: 62.1 km/h", result);
+    }
+
+    [Fact]
+    public void ProcessTemplate_WithRoundingOnly_AppliesRoundingCorrectly()
+    {
+        // Arrange
+        var items = new List<TemplateItem>
+        {
+            new() { Category = "pi", NumericValue = 3.14159, Unit = "" }
+        };
+        
+        var engine = new TemplateEngine(items);
+        
+        var templateDto = new TemplateDto
+        {
+            TemplateLiteral = "Pi: {{piValue}}",
+            Variables = new Dictionary<string, TemplateVariable>
+            {
+                ["piValue"] = new() 
+                { 
+                    Id = "pi", 
+                    Source = VariableSource.NumberValue,
+                    Round = "round(2)"
+                }
+            }
+        };
+        
+        // Act
+        var result = engine.ProcessTemplate(templateDto);
+        
+        // Assert
+        Assert.Equal("Pi: 3.14", result);
+    }
+
+    [Fact]
+    public void ProcessTemplate_WithConversionOnly_AppliesConversionCorrectly()
+    {
+        // Arrange
+        var items = new List<TemplateItem>
+        {
+            new() { Category = "speed", NumericValue = 100.0, Unit = "km/h" }
+        };
+        
+        var engine = new TemplateEngine(items);
+        
+        var templateDto = new TemplateDto
+        {
+            TemplateLiteral = "Speed: {{speedValue}}",
+            Variables = new Dictionary<string, TemplateVariable>
+            {
+                ["speedValue"] = new() 
+                { 
+                    Id = "speed", 
+                    Source = VariableSource.NumberValue,
+                    Convert = "mph"
+                }
+            }
+        };
+        
+        // Act
+        var result = engine.ProcessTemplate(templateDto);
+        
+        // Assert - 100 km/h = 62.137100000000004 mph
+        Assert.Equal("Speed: 62.137100000000004", result);
     }
 }
 

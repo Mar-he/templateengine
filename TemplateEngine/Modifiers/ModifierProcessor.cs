@@ -71,87 +71,85 @@ public class ModifierProcessor
     }
 
     /// <summary>
-    /// Processes all modifiers in sequence for the given value and unit.
+    /// Processes a single modifier for the given value and unit.
     /// </summary>
     /// <param name="value">The initial value to process.</param>
     /// <param name="unit">The initial unit of the value.</param>   
-
-    /// <param name="modifierString">The modifier string containing all modifiers (e.g., "convert(mph):round(2)").</param>
+    /// <param name="modifierString">The modifier string (e.g., "round(2)" or "convert(mph)").</param>
     /// <returns>The processed value as a string.</returns>
     /// <exception cref="InvalidModifierException">Thrown when an unknown modifier is encountered.</exception>
-    public string ProcessModifiers(double value, string unit, string modifierString)
+    public string ProcessModifier(double value, string unit, string modifierString)
     {
         var context = new ModifierContext(value, unit);
-        var modifierParts = modifierString.Split(':');
-
-        foreach (var modifierPart in modifierParts)
+        var trimmedModifier = modifierString.Trim();
+        
+        if (string.IsNullOrEmpty(trimmedModifier))
         {
-            var trimmedModifier = modifierPart.Trim();
-            if (string.IsNullOrEmpty(trimmedModifier)) continue;
+            return context.Value.ToString(_culture);
+        }
 
-            var inputValue = context.Value;
-            var inputUnit = context.Unit;
-            
-            var modifier = _modifiers.FirstOrDefault(m => m.CanHandle(trimmedModifier));
-            
-            if (modifier != null)
+        var inputValue = context.Value;
+        var inputUnit = context.Unit;
+        
+        var modifier = _modifiers.FirstOrDefault(m => m.CanHandle(trimmedModifier));
+        
+        if (modifier != null)
+        {
+            try
             {
-                try
-                {
-                    modifier.Apply(context, trimmedModifier);
-                    
-                    // Extract modifier name and parameters
-                    var (modifierName, parameters) = ParseModifierName(trimmedModifier);
-                    
-                    OnModifierApplied(new ModifierAppliedEventArgs
-                    {
-                        ModifierName = modifierName,
-                        Parameters = parameters,
-                        InputValue = inputValue,
-                        OutputValue = context.Value,
-                        InputUnit = inputUnit,
-                        OutputUnit = context.Unit,
-                        IsSuccessful = true
-                    });
-                }
-                catch (Exception)
-                {
-                    var (modifierName, parameters) = ParseModifierName(trimmedModifier);
-                    
-                    OnModifierApplied(new ModifierAppliedEventArgs
-                    {
-                        ModifierName = modifierName,
-                        Parameters = parameters,
-                        InputValue = inputValue,
-                        OutputValue = inputValue, // Keep original value on error
-                        InputUnit = inputUnit,
-                        OutputUnit = inputUnit,
-                        IsSuccessful = false
-                    });
-                    
-                    throw; // Re-throw the exception
-                }
-            }
-            else
-            {
-                // Extract modifier name for better error reporting
+                modifier.Apply(context, trimmedModifier);
+                
+                // Extract modifier name and parameters
                 var (modifierName, parameters) = ParseModifierName(trimmedModifier);
                 
-                // Raise event for failed modifier
                 OnModifierApplied(new ModifierAppliedEventArgs
                 {
                     ModifierName = modifierName,
                     Parameters = parameters,
                     InputValue = inputValue,
-                    OutputValue = inputValue,
+                    OutputValue = context.Value,
+                    InputUnit = inputUnit,
+                    OutputUnit = context.Unit,
+                    IsSuccessful = true
+                });
+            }
+            catch (Exception)
+            {
+                var (modifierName, parameters) = ParseModifierName(trimmedModifier);
+                
+                OnModifierApplied(new ModifierAppliedEventArgs
+                {
+                    ModifierName = modifierName,
+                    Parameters = parameters,
+                    InputValue = inputValue,
+                    OutputValue = inputValue, // Keep original value on error
                     InputUnit = inputUnit,
                     OutputUnit = inputUnit,
                     IsSuccessful = false
                 });
                 
-                // Throw custom exception for unknown modifier
-                throw new InvalidModifierException(modifierName, modifierString);
+                throw; // Re-throw the exception
             }
+        }
+        else
+        {
+            // Extract modifier name for better error reporting
+            var (modifierName, parameters) = ParseModifierName(trimmedModifier);
+            
+            // Raise event for failed modifier
+            OnModifierApplied(new ModifierAppliedEventArgs
+            {
+                ModifierName = modifierName,
+                Parameters = parameters,
+                InputValue = inputValue,
+                OutputValue = inputValue,
+                InputUnit = inputUnit,
+                OutputUnit = inputUnit,
+                IsSuccessful = false
+            });
+            
+            // Throw custom exception for unknown modifier
+            throw new InvalidModifierException(modifierName, modifierString);
         }
 
         return context.Value.ToString(_culture);

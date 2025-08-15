@@ -46,15 +46,28 @@ public class ModifierTests
     }
 
     [Fact]
-    public void ModifierProcessor_ProcessModifiers_AppliesMultipleModifiers()
+    public void ModifierProcessor_ProcessModifier_AppliesRoundModifier()
     {
         // Arrange
         var processor = new ModifierProcessor();
         
         // Act
-        var result = processor.ProcessModifiers(100.0, "km/h", "convert(mph):round(1)");
+        var result = processor.ProcessModifier(3.14159, "", "round(2)");
         
         // Assert
-        Assert.Equal("62.1", result);
+        Assert.Equal("3.14", result);
+    }
+    
+    [Fact]
+    public void ModifierProcessor_ProcessModifier_AppliesConvertModifier()
+    {
+        // Arrange
+        var processor = new ModifierProcessor();
+        
+        // Act
+        var result = processor.ProcessModifier(100.0, "km/h", "convert(mph)");
+        
+        // Assert
+        Assert.Equal("62.137100000000004", result);
     }
 }

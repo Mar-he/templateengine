@@ -1,45 +1,75 @@
-using System.Text.Json.Serialization;
-
 namespace TemplateEngine;
 
 /// <summary>
-/// Represents a variable configuration in a template.
+/// Represents the source property type for template variables.
 /// </summary>
-public record TemplateVariable
+public enum VariableSource
 {
     /// <summary>
-    /// The identifier for the data source.
+    /// Use the numeric value property.
     /// </summary>
-    [JsonPropertyName("id")]
-    public required string Id { get; init; }
-
+    NumberValue,
+    
     /// <summary>
-    /// The source type (e.g., "number_value", "unit").
+    /// Use the string value property.
     /// </summary>
-    [JsonPropertyName("source")]
-    public required string Source { get; init; }
-
+    StringValue,
+    
     /// <summary>
-    /// Optional rounding modifier (e.g., "floor", "round(1)").
+    /// Use the unit property.
     /// </summary>
-    [JsonPropertyName("round")]
-    public string? Round { get; init; }
+    Unit
 }
 
 /// <summary>
-/// Represents a template with its literal string and variable definitions.
+/// Extensions for VariableSource enum to provide string conversion.
+/// </summary>
+public static class VariableSourceExtensions
+{
+    /// <summary>
+    /// Converts VariableSource enum to its string representation.
+    /// </summary>
+    /// <param name="source">The source enum value.</param>
+    /// <returns>The string representation.</returns>
+    public static string ToStringValue(this VariableSource source) => source switch
+    {
+        VariableSource.NumberValue => "number_value",
+        VariableSource.StringValue => "string_value", 
+        VariableSource.Unit => "unit",
+        _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Invalid VariableSource value")
+    };
+    
+    /// <summary>
+    /// Parses a string value to VariableSource enum.
+    /// </summary>
+    /// <param name="value">The string value to parse.</param>
+    /// <returns>The corresponding VariableSource enum value.</returns>
+    /// <exception cref="ArgumentException">Thrown when the string value is invalid.</exception>
+    public static VariableSource FromStringValue(string value) => value?.ToLowerInvariant() switch
+    {
+        "number_value" => VariableSource.NumberValue,
+        "string_value" => VariableSource.StringValue,
+        "unit" => VariableSource.Unit,
+        _ => throw new ArgumentException($"Invalid source value: {value}. Valid values are: number_value, string_value, unit", nameof(value))
+    };
+}
+
+/// <summary>
+/// Represents a template DTO with a template literal and variable definitions.
 /// </summary>
 public record TemplateDto
 {
-    /// <summary>
-    /// The template literal string containing variable placeholders.
-    /// </summary>
-    [JsonPropertyName("template")]
     public required string TemplateLiteral { get; init; }
-
-    /// <summary>
-    /// Dictionary of variable names to their configurations.
-    /// </summary>
-    [JsonPropertyName("variables")]
     public required Dictionary<string, TemplateVariable> Variables { get; init; }
+}
+
+/// <summary>
+/// Represents a variable definition within a template.
+/// </summary>
+public record TemplateVariable
+{
+    public required string Id { get; init; }
+    public required VariableSource Source { get; init; }
+    public string? Round { get; init; }
+    public string? Convert { get; init; }
 }
