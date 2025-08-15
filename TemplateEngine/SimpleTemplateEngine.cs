@@ -196,7 +196,7 @@ public class TemplateEngine : ITemplateEngine
                 {
                     Token = variableToken,
                     ItemName = variable.Id,
-                    PropertyName = variable.Source,
+                    PropertyName = variable.Source.ToStringValue(),
                     Modifiers = variable.Round,
                     RawValue = null,
                     ProcessedValue = variableToken,
@@ -207,11 +207,11 @@ public class TemplateEngine : ITemplateEngine
                 return variableToken;
             }
 
-            var rawValue = variable.Source.ToLowerInvariant() switch
+            var rawValue = variable.Source switch
             {
-                "number_value" => (object?)item.NumericValue,
-                "string_value" => (object?)item.StringValue,
-                "unit" => (object?)(item.Unit ?? string.Empty),
+                VariableSource.NumberValue => (object?)item.NumericValue,
+                VariableSource.StringValue => (object?)item.StringValue,
+                VariableSource.Unit => (object?)(item.Unit ?? string.Empty),
                 _ => null
             };
 
@@ -221,7 +221,7 @@ public class TemplateEngine : ITemplateEngine
                 {
                     Token = variableToken,
                     ItemName = variable.Id,
-                    PropertyName = variable.Source,
+                    PropertyName = variable.Source.ToStringValue(),
                     Modifiers = variable.Round,
                     RawValue = null,
                     ProcessedValue = variableToken,
@@ -232,13 +232,53 @@ public class TemplateEngine : ITemplateEngine
                 return variableToken;
             }
 
-            var processedValue = FormatValue(rawValue);
+            string processedValue;
+
+            // Apply modifiers only for numeric values
+            if (variable.Source == VariableSource.NumberValue && rawValue is double numericValue)
+            {
+                var currentValue = numericValue;
+                var currentUnit = item.Unit ?? string.Empty;
+                
+                // Apply conversion first if present
+                if (!string.IsNullOrEmpty(variable.Convert))
+                {
+                    try
+                    {
+                        // Create a temporary context for conversion
+                        var conversionContext = new ModifierContext(currentValue, currentUnit);
+                        var convertModifier = new ConvertModifier();
+                        convertModifier.Apply(conversionContext, $"convert({variable.Convert})");
+                        currentValue = conversionContext.Value;
+                        currentUnit = conversionContext.Unit;
+                    }
+                    catch (Exception)
+                    {
+                        // If conversion fails, continue with original value
+                    }
+                }
+                
+                // Apply rounding if present
+                if (!string.IsNullOrEmpty(variable.Round))
+                {
+                    processedValue = _modifierProcessor.ProcessModifier(currentValue, currentUnit, variable.Round);
+                }
+                else
+                {
+                    processedValue = FormatValue(currentValue);
+                }
+            }
+            else
+            {
+                // For non-numeric values, just format them
+                processedValue = FormatValue(rawValue);
+            }
 
             OnTokenProcessing(new TokenProcessingEventArgs
             {
                 Token = variableToken,
                 ItemName = variable.Id,
-                PropertyName = variable.Source,
+                PropertyName = variable.Source.ToStringValue(),
                 Modifiers = variable.Round,
                 RawValue = rawValue,
                 ProcessedValue = processedValue,

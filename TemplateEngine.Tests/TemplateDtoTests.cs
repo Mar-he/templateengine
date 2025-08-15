@@ -21,9 +21,9 @@ public class TemplateDtoTests
             TemplateLiteral = "{{speedValue}} {{speedUnit}} {{vehicleType}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["speedValue"] = new() { Id = "speed", Source = "number_value" },
-                ["speedUnit"] = new() { Id = "speed", Source = "unit" },
-                ["vehicleType"] = new() { Id = "type", Source = "string_value" }
+                ["speedValue"] = new() { Id = "speed", Source = VariableSource.NumberValue },
+                ["speedUnit"] = new() { Id = "speed", Source = VariableSource.Unit },
+                ["vehicleType"] = new() { Id = "type", Source = VariableSource.StringValue }
             }
         };
         
@@ -50,7 +50,7 @@ public class TemplateDtoTests
             TemplateLiteral = "Temperature: {{temp}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["temp"] = new() { Id = "temperature", Source = "number_value" }
+                ["temp"] = new() { Id = "temperature", Source = VariableSource.NumberValue }
             }
         };
         
@@ -77,7 +77,7 @@ public class TemplateDtoTests
             TemplateLiteral = "Description: {{desc}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["desc"] = new() { Id = "description", Source = "string_value" }
+                ["desc"] = new() { Id = "description", Source = VariableSource.StringValue }
             }
         };
         
@@ -104,7 +104,7 @@ public class TemplateDtoTests
             TemplateLiteral = "Unit: {{unit}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["unit"] = new() { Id = "speed", Source = "unit" }
+                ["unit"] = new() { Id = "speed", Source = VariableSource.Unit }
             }
         };
         
@@ -131,8 +131,8 @@ public class TemplateDtoTests
             TemplateLiteral = "{{existingItem}} and {{nonExistentItem}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["existingItem"] = new() { Id = "existing", Source = "number_value" },
-                ["nonExistentItem"] = new() { Id = "nonexistent", Source = "number_value" }
+                ["existingItem"] = new() { Id = "existing", Source = VariableSource.NumberValue },
+                ["nonExistentItem"] = new() { Id = "nonexistent", Source = VariableSource.NumberValue }
             }
         };
         
@@ -159,7 +159,7 @@ public class TemplateDtoTests
             TemplateLiteral = "{{definedVar}} and {{undefinedVar}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["definedVar"] = new() { Id = "test", Source = "number_value" }
+                ["definedVar"] = new() { Id = "test", Source = VariableSource.NumberValue }
                 // undefinedVar is missing from Variables dictionary
             }
         };
@@ -205,7 +205,7 @@ public class TemplateDtoTests
             TemplateLiteral = "{{val}} + {{val}} = {{val}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["val"] = new() { Id = "value", Source = "number_value" }
+                ["val"] = new() { Id = "value", Source = VariableSource.NumberValue }
             }
         };
         
@@ -272,8 +272,8 @@ public class TemplateDtoTests
             TemplateLiteral = "Value: {{value}}, Unit: '{{unit}}'",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" },
-                ["unit"] = new() { Id = "test", Source = "unit" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue },
+                ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
             }
         };
         

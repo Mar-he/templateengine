@@ -58,7 +58,7 @@ public class TemplateEngineEventsTests
             TemplateLiteral = "Value: {{value}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
             }
         };
 
@@ -94,7 +94,7 @@ public class TemplateEngineEventsTests
             TemplateLiteral = "{{testVar}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["testVar"] = new() { Id = "test", Source = "string_value" }
+                ["testVar"] = new() { Id = "test", Source = VariableSource.StringValue }
             }
         };
 

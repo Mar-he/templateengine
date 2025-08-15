@@ -34,8 +34,8 @@ public class DependencyInjectionTests
             TemplateLiteral = "Value: {{value}} {{unit}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" },
-                ["unit"] = new() { Id = "test", Source = "unit" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue },
+                ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
             }
         };
         
@@ -73,7 +73,7 @@ public class DependencyInjectionTests
             TemplateLiteral = "Value: {{value}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
             }
         };
         
@@ -104,8 +104,8 @@ public class DependencyInjectionTests
             TemplateLiteral = "Distance: {{distance}} {{unit}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["distance"] = new() { Id = "test", Source = "number_value" },
-                ["unit"] = new() { Id = "test", Source = "unit" }
+                ["distance"] = new() { Id = "test", Source = VariableSource.NumberValue },
+                ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
             }
         };
         
@@ -136,7 +136,7 @@ public class DependencyInjectionTests
             TemplateLiteral = "Valeur: {{value}}",
             Variables = new Dictionary<string, TemplateVariable>
             {
-                ["value"] = new() { Id = "test", Source = "number_value" }
+                ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
             }
         };
         
