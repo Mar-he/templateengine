@@ -16,16 +16,14 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{speedValue}} {{speedUnit}} {{vehicleType}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "{{speedValue}} {{speedUnit}} {{vehicleType}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["speedValue"] = new() { Id = "speed", Source = VariableSource.NumberValue },
                 ["speedUnit"] = new() { Id = "speed", Source = VariableSource.Unit },
                 ["vehicleType"] = new() { Id = "type", Source = VariableSource.StringValue }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -45,14 +43,12 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Temperature: {{temp}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Temperature: {{temp}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["temp"] = new() { Id = "temperature", Source = VariableSource.NumberValue }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -72,14 +68,12 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Description: {{desc}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Description: {{desc}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["desc"] = new() { Id = "description", Source = VariableSource.StringValue }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -99,14 +93,12 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Unit: {{unit}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Unit: {{unit}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["unit"] = new() { Id = "speed", Source = VariableSource.Unit }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -126,15 +118,13 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{existingItem}} and {{nonExistentItem}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "{{existingItem}} and {{nonExistentItem}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["existingItem"] = new() { Id = "existing", Source = VariableSource.NumberValue },
                 ["nonExistentItem"] = new() { Id = "nonexistent", Source = VariableSource.NumberValue }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -154,18 +144,16 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{definedVar}} and {{undefinedVar}}",
-            Variables = new Dictionary<string, TemplateVariable>
-            {
-                ["definedVar"] = new() { Id = "test", Source = VariableSource.NumberValue }
-                // undefinedVar is missing from Variables dictionary
-            }
-        };
-        
+        // This test should now fail at TemplateDto.Create() due to validation
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => engine.ProcessTemplate(templateDto));
+        var ex = Assert.Throws<ArgumentException>(() => 
+            TemplateDto.Create(
+                "{{definedVar}} and {{undefinedVar}}",
+                new Dictionary<string, TemplateVariable>
+                {
+                    ["definedVar"] = new() { Id = "test", Source = VariableSource.NumberValue }
+                    // undefinedVar is missing from Variables dictionary
+                }));
         Assert.Contains("undefinedVar", ex.Message);
         Assert.Contains("not defined in Variables", ex.Message);
     }
@@ -176,11 +164,9 @@ public class TemplateDtoTests
         // Arrange
         var engine = new TemplateEngine(new List<TemplateItem>());
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "No variables here",
-            Variables = new Dictionary<string, TemplateVariable>()
-        };
+        var templateDto = TemplateDto.Create(
+            "No variables here",
+            new Dictionary<string, TemplateVariable>());
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -200,14 +186,12 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{val}} + {{val}} = {{val}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "{{val}} + {{val}} = {{val}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["val"] = new() { Id = "value", Source = VariableSource.NumberValue }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);
@@ -231,14 +215,9 @@ public class TemplateDtoTests
     {
         // Arrange
         var engine = new TemplateEngine(new List<TemplateItem>());
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "",
-            Variables = new Dictionary<string, TemplateVariable>()
-        };
         
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => engine.ProcessTemplate(templateDto));
+        Assert.Throws<ArgumentException>(() => TemplateDto.Create("", new Dictionary<string, TemplateVariable>()));
     }
 
     [Fact]
@@ -246,14 +225,9 @@ public class TemplateDtoTests
     {
         // Arrange
         var engine = new TemplateEngine(new List<TemplateItem>());
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = null!,
-            Variables = new Dictionary<string, TemplateVariable>()
-        };
         
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => engine.ProcessTemplate(templateDto));
+        Assert.Throws<ArgumentException>(() => TemplateDto.Create(null!, new Dictionary<string, TemplateVariable>()));
     }
 
     [Fact]
@@ -267,15 +241,13 @@ public class TemplateDtoTests
         
         var engine = new TemplateEngine(items);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Value: {{value}}, Unit: '{{unit}}'",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Value: {{value}}, Unit: '{{unit}}'",
+            new Dictionary<string, TemplateVariable>
             {
                 ["value"] = new() { Id = "test", Source = VariableSource.NumberValue },
                 ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
-            }
-        };
+            });
         
         // Act
         var result = engine.ProcessTemplate(templateDto);

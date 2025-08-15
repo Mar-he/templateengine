@@ -96,7 +96,7 @@ public class TemplateEngine : ITemplateEngine
     public string ProcessTemplate(TemplateDto templateDto)
     {
         ArgumentNullException.ThrowIfNull(templateDto);
-        if (string.IsNullOrEmpty(templateDto.TemplateLiteral)) throw new ArgumentException("Template literal cannot be null or empty.", nameof(templateDto));
+        // Note: Validation is now handled by TemplateDto.Create() factory method
 
         var correlationId = Guid.NewGuid().ToString();
         _currentCorrelationId = correlationId;
@@ -114,8 +114,6 @@ public class TemplateEngine : ITemplateEngine
 
         try
         {
-            ValidateTemplateDto(templateDto);
-            
             var result = _variableRegex.Replace(template, match => ProcessVariable(match, templateDto.Variables, correlationId));
             
             stopwatch.Stop();
@@ -153,23 +151,6 @@ public class TemplateEngine : ITemplateEngine
         }
     }
 
-    /// <summary>
-    /// Validates that all variables in the template literal are defined in the Variables dictionary.
-    /// </summary>
-    /// <param name="templateDto">The template DTO to validate.</param>
-    /// <exception cref="ArgumentException">Thrown when the DTO is invalid.</exception>
-    private void ValidateTemplateDto(TemplateDto templateDto)
-    {
-        var variableMatches = _variableRegex.Matches(templateDto.TemplateLiteral);
-        var templateVariables = variableMatches.Cast<Match>().Select(m => m.Groups[1].Value).Distinct().ToList();
-        
-        var undefinedVariables = templateVariables.Where(v => !templateDto.Variables.ContainsKey(v)).ToList();
-        
-        if (undefinedVariables.Any())
-        {
-            throw new ArgumentException($"Template DTO is invalid. The following variables are used in the template but not defined in Variables: {string.Join(", ", undefinedVariables)}");
-        }
-    }
 
     /// <summary>
     /// Processes a variable match from the template DTO structure.

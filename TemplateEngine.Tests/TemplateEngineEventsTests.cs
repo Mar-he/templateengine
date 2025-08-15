@@ -20,11 +20,9 @@ public class TemplateEngineEventsTests
             receivedTemplate = e.Template;
         };
 
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Test template",
-            Variables = new Dictionary<string, TemplateVariable>()
-        };
+        var templateDto = TemplateDto.Create(
+            "Test template",
+            new Dictionary<string, TemplateVariable>());
 
         // Act
         engine.ProcessTemplate(templateDto);
@@ -53,14 +51,12 @@ public class TemplateEngineEventsTests
             receivedResult = e.Result;
         };
 
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Value: {{value}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Value: {{value}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
-            }
-        };
+            });
 
         // Act
         engine.ProcessTemplate(templateDto);
@@ -89,14 +85,12 @@ public class TemplateEngineEventsTests
             receivedToken = e.Token;
         };
 
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{testVar}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "{{testVar}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["testVar"] = new() { Id = "test", Source = VariableSource.StringValue }
-            }
-        };
+            });
 
         // Act
         engine.ProcessTemplate(templateDto);
@@ -120,23 +114,12 @@ public class TemplateEngineEventsTests
             receivedMessage = e.Exception.Message;
         };
 
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "{{undefinedVar}}",
-            Variables = new Dictionary<string, TemplateVariable>()
-        };
-
+        // This test should now fail at TemplateDto.Create() due to validation
         // Act & Assert
-        try
-        {
-            engine.ProcessTemplate(templateDto);
-        }
-        catch (ArgumentException)
-        {
-            // Expected exception
-        }
-        
-        Assert.True(eventRaised);
-        Assert.Contains("undefinedVar", receivedMessage);
+        var ex = Assert.Throws<ArgumentException>(() => 
+            TemplateDto.Create(
+                "{{undefinedVar}}",
+                new Dictionary<string, TemplateVariable>()));
+        Assert.Contains("undefinedVar", ex.Message);
     }
 }
