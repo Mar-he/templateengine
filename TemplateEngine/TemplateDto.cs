@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace TemplateEngine;
 
 /// <summary>
@@ -59,8 +61,53 @@ public static class VariableSourceExtensions
 /// </summary>
 public record TemplateDto
 {
+    private static readonly Regex _variableRegex = new Regex(@"\{\{(\w+)\}\}", RegexOptions.Compiled);
+    
     public required string TemplateLiteral { get; init; }
     public required Dictionary<string, TemplateVariable> Variables { get; init; }
+
+    private TemplateDto()
+    {
+        
+    }
+    
+    public static TemplateDto Create(string literal, Dictionary<string, TemplateVariable> variables)
+    {
+        if (string.IsNullOrWhiteSpace(literal))
+        {
+            throw new ArgumentException("Template literal cannot be null or empty.", nameof(literal));
+        }
+
+        if (variables == null)
+        {
+            throw new ArgumentException("Variables dictionary cannot be null.", nameof(variables));
+        }
+
+        var dto = new TemplateDto
+        {
+            TemplateLiteral = literal,
+            Variables = variables
+        };
+
+        dto.Validate(literal, variables);
+        
+        return dto;
+    }
+    
+    private void Validate(string literal, Dictionary<string, TemplateVariable> variables)
+    {
+        var variableMatches = _variableRegex.Matches(TemplateLiteral);
+        //these are all keys that are used in the template
+        var templateVariables = variableMatches.Select(m => m.Groups[1].Value).Distinct().ToList();
+        
+        // these are all keys that are present in the template, but not in the dicionary.
+        var undefinedVariables = templateVariables.Where(v => !variables.ContainsKey(v)).ToList();
+        
+        if (undefinedVariables.Count != 0)
+        {
+            throw new ArgumentException($"Template DTO is invalid. The following variables are used in the template but not defined in Variables: {string.Join(", ", undefinedVariables)}");
+        }
+    }
 }
 
 /// <summary>

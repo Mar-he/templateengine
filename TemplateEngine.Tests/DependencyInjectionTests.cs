@@ -29,15 +29,13 @@ public class DependencyInjectionTests
         // Assert
         Assert.NotNull(templateEngine);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Value: {{value}} {{unit}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Value: {{value}} {{unit}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["value"] = new() { Id = "test", Source = VariableSource.NumberValue },
                 ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
-            }
-        };
+            });
         
         var result = templateEngine.ProcessTemplate(templateDto);
         Assert.Equal("Value: 42 kg", result);
@@ -68,14 +66,12 @@ public class DependencyInjectionTests
         // Assert
         Assert.NotNull(templateEngine);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Value: {{value}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Value: {{value}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
-            }
-        };
+            });
         
         var result = templateEngine.ProcessTemplate(templateDto);
         Assert.Equal("Value: 1234,56", result); // German culture uses comma as decimal separator
@@ -99,15 +95,13 @@ public class DependencyInjectionTests
         // Assert
         Assert.NotNull(templateEngine);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Distance: {{distance}} {{unit}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Distance: {{distance}} {{unit}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["distance"] = new() { Id = "test", Source = VariableSource.NumberValue },
                 ["unit"] = new() { Id = "test", Source = VariableSource.Unit }
-            }
-        };
+            });
         
         var result = templateEngine.ProcessTemplate(templateDto);
         Assert.Equal("Distance: 100 m", result);
@@ -131,14 +125,12 @@ public class DependencyInjectionTests
         // Assert
         Assert.NotNull(templateEngine);
         
-        var templateDto = new TemplateDto
-        {
-            TemplateLiteral = "Valeur: {{value}}",
-            Variables = new Dictionary<string, TemplateVariable>
+        var templateDto = TemplateDto.Create(
+            "Valeur: {{value}}",
+            new Dictionary<string, TemplateVariable>
             {
                 ["value"] = new() { Id = "test", Source = VariableSource.NumberValue }
-            }
-        };
+            });
         
         var result = templateEngine.ProcessTemplate(templateDto);
         Assert.Equal("Valeur: 9876,54", result); // French culture uses comma as decimal separator
