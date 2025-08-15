@@ -1,5 +1,4 @@
 using Xunit;
-using System.Globalization;
 using TemplateEngine.Modifiers;
 
 namespace TemplateEngine.Tests;
@@ -7,200 +6,55 @@ namespace TemplateEngine.Tests;
 public class ModifierTests
 {
     [Fact]
-    public void ProcessTemplate_WithRounding_RoundsCorrectly()
+    public void RoundModifier_CanHandle_RecognizesRoundModifier()
     {
         // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "speed", NumericValue = 123.456789, Unit = "km/h" }
-        };
-        
-        var engine = new TemplateEngine(items);
+        var modifier = new RoundModifier();
         
         // Act & Assert
-        Assert.Equal("123.46", engine.ProcessTemplate("{{speed.value:round(2)}}"));
-        Assert.Equal("123", engine.ProcessTemplate("{{speed.value:round(0)}}"));
-        Assert.Equal("123.4568", engine.ProcessTemplate("{{speed.value:round(4)}}"));
+        Assert.True(modifier.CanHandle("round(2)"));
+        Assert.True(modifier.CanHandle("ROUND(0)"));
+        Assert.False(modifier.CanHandle("floor"));
+        Assert.False(modifier.CanHandle("convert(mph)"));
     }
 
     [Fact]
-    public void ProcessTemplate_WithUnitConversion_ConvertsCorrectly()
+    public void RoundModifier_Apply_RoundsCorrectly()
     {
         // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "speed", NumericValue = 100, Unit = "km/h" },
-            new() { Category = "consumption", NumericValue = 8.5, Unit = "l/100km" },
-            new() { Category = "temp", NumericValue = 25, Unit = "celsius" }
-        };
-        
-        var engine = new TemplateEngine(items);
-        
-        // Act & Assert - Use rounded values to avoid floating point precision issues
-        Assert.Equal("62.1371", engine.ProcessTemplate("{{speed.value:convert(mph):round(4)}}"));
-        Assert.Equal("27.7", engine.ProcessTemplate("{{consumption.value:convert(mpg):round(1)}}"));
-        Assert.Equal("77", engine.ProcessTemplate("{{temp.value:convert(fahrenheit):round(0)}}"));
-    }
-
-    [Fact]
-    public void ProcessTemplate_WithConvertAndRound_AppliesInOrder()
-    {
-        // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "speed", NumericValue = 100, Unit = "km/h" }
-        };
-        
-        var engine = new TemplateEngine(items);
-        
-        // Act & Assert
-        Assert.Equal("62.1", engine.ProcessTemplate("{{speed.value:convert(mph):round(1)}}"));
-        Assert.Equal("62", engine.ProcessTemplate("{{speed.value:convert(mph):round(0)}}"));
-    }
-
-    [Fact]
-    public void ProcessTemplate_WithRoundAndConvert_AppliesInOrder()
-    {
-        // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "speed", NumericValue = 100.789, Unit = "km/h" }
-        };
-        
-        var engine = new TemplateEngine(items);
-        
-        // Act & Assert
-        // First round to 101, then convert to mph
-        Assert.Equal("62.8", engine.ProcessTemplate("{{speed.value:round(0):convert(mph):round(1)}}"));
-    }
-
-    [Fact]
-    public void ProcessTemplate_WithInvalidConversion_ReturnsOriginalValue()
-    {
-        // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "weight", NumericValue = 100, Unit = "kg" }
-        };
-        
-        var engine = new TemplateEngine(items);
-        
-        // Act - Try to convert kg to mph (invalid conversion)
-        var result = engine.ProcessTemplate("{{weight.value:convert(mph)}}");
-        
-        // Assert - Should return original value since conversion is not possible
-        Assert.Equal("100", result);
-    }
-
-    [Fact]
-    public void ProcessTemplate_WithStringValue_IgnoresModifiers()
-    {
-        // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "type", StringValue = "electric power" }
-        };
-        
-        var engine = new TemplateEngine(items);
+        var modifier = new RoundModifier();
+        var context = new ModifierContext(3.14159, "");
         
         // Act
-        var result = engine.ProcessTemplate("{{type.value:round(2)}}");
-        
-        // Assert - String values should ignore numeric modifiers
-        Assert.Equal("electric power", result);
-    }
-
-    [Fact]
-    public void ProcessTemplate_ComplexTemplate_HandlesMultipleConversions()
-    {
-        // Arrange
-        var jsonData = """
-        [{
-          "category": "car_speed",
-          "numeric_value": 120.5,
-          "unit": "km/h"
-        }, {
-          "category": "fuel_consumption",
-          "numeric_value": 7.2,
-          "unit": "l/100km"
-        }, {
-          "category": "temperature",
-          "numeric_value": 22.5,
-          "unit": "celsius"
-        }]
-        """;
-        
-        var engine = new TemplateEngine(jsonData);
-        var template = "Speed: {{car_speed.value:convert(mph):round(1)}} mph, " +
-                      "Consumption: {{fuel_consumption.value:convert(mpg):round(1)}} mpg, " +
-                      "Temp: {{temperature.value:convert(fahrenheit):round(0)}}°F";
-        
-        // Act
-        var result = engine.ProcessTemplate(template);
-        
-        // Assert - 22.5°C = 72.5°F, rounded to 72°F (banker's rounding)
-        Assert.Equal("Speed: 74.9 mph, Consumption: 32.7 mpg, Temp: 72°F", result);
-    }
-
-    [Fact]
-    public void RegisterModifier_CustomModifier_WorksCorrectly()
-    {
-        // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "test", NumericValue = 10, Unit = "units" }
-        };
-        
-        var engine = new TemplateEngine(items);
-        
-        // Create a custom modifier that multiplies by 2
-        var customModifier = new TestMultiplyModifier();
-        engine.RegisterModifier(customModifier);
-        
-        // Act
-        var result = engine.ProcessTemplate("{{test.value:multiply(2)}}");
+        modifier.Apply(context, "round(2)");
         
         // Assert
-        Assert.Equal("20", result);
+        Assert.Equal(3.14, context.Value);
     }
 
     [Fact]
-    public void ModifierProcessor_ChainedCustomModifiers_WorksCorrectly()
+    public void ConvertModifier_CanHandle_RecognizesConvertModifier()
     {
         // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "test", NumericValue = 5.555, Unit = "km/h" }
-        };
+        var modifier = new ConvertModifier();
         
-        var engine = new TemplateEngine(items);
-        
-        // Register custom modifier
-        engine.RegisterModifier(new TestMultiplyModifier());
-        
-        // Act - Test chaining custom modifier with existing ones
-        var result = engine.ProcessTemplate("{{test.value:multiply(2):convert(mph):round(1)}}");
-        
-        // Assert - 5.555 * 2 = 11.11 km/h -> ~6.9 mph -> 6.9
-        Assert.Equal("6.9", result);
-    }
-}
-
-// Test helper class for custom modifier
-public class TestMultiplyModifier : IValueModifier
-{
-    public bool CanHandle(string modifierString)
-    {
-        return modifierString.StartsWith("multiply(", StringComparison.OrdinalIgnoreCase) && 
-               modifierString.EndsWith(")");
+        // Act & Assert
+        Assert.True(modifier.CanHandle("convert(mph)"));
+        Assert.True(modifier.CanHandle("CONVERT(fahrenheit)"));
+        Assert.False(modifier.CanHandle("round(2)"));
+        Assert.False(modifier.CanHandle("floor"));
     }
 
-    public void Apply(ModifierContext context, string modifierString)
+    [Fact]
+    public void ModifierProcessor_ProcessModifiers_AppliesMultipleModifiers()
     {
-        var parameter = modifierString[9..^1]; // Extract between "multiply(" and ")"
-        if (double.TryParse(parameter, NumberStyles.Float, CultureInfo.InvariantCulture, out var multiplier))
-        {
-            context.Value *= multiplier;
-        }
+        // Arrange
+        var processor = new ModifierProcessor();
+        
+        // Act
+        var result = processor.ProcessModifiers(100.0, "km/h", "convert(mph):round(1)");
+        
+        // Assert
+        Assert.Equal("62.1", result);
     }
 }

@@ -5,6 +5,7 @@ A powerful and flexible template engine for .NET that processes templates with t
 ## Features
 
 - **Token-based templating** with `{{item.property}}` syntax
+- **Advanced variable-based templating** with TemplateDto structure
 - **Value modifiers** for rounding and unit conversion
 - **Culture-aware formatting** for internationalization
 - **Unit conversion** between common measurement units
@@ -22,17 +23,17 @@ Add the package reference to your project:
 
 ## Quick Start
 
-### Basic Usage
+### Basic Token-Based Templates
 
 ```csharp
 // JSON data with numeric and string values
 var jsonData = """
 [{
-  "name": "speed",
+  "category": "speed",
   "numeric_value": 100,
   "unit": "km/h"
 }, {
-  "name": "type",
+  "category": "type",
   "string_value": "electric vehicle"
 }]
 """;
@@ -43,42 +44,125 @@ var result = engine.ProcessTemplate(template);
 // Output: "Vehicle: electric vehicle, Speed: 100 km/h"
 ```
 
-### With Value Modifiers
+### Advanced Variable-Based Templates (New)
+
+The template engine now supports a more structured approach using `TemplateDto`:
 
 ```csharp
-var template = "Speed: {{speed.value:convert(mph):round(1)}} mph";
-var result = engine.ProcessTemplate(template);
-// Output: "Speed: 62.1 mph"
+// Create template items
+var items = new List<TemplateItem>
+{
+    new() { Category = "1.2.3", NumericValue = 25.5, Unit = "km/h" },
+    new() { Category = "1.2.4", NumericValue = 100.7, Unit = "mph" }
+};
+
+var engine = new TemplateEngine(items);
+
+// Define template with variable structure
+var templateDto = new TemplateDto
+{
+    TemplateLiteral = "{{value1}} bis {{value2}} {{value2Unit}}",
+    Variables = new Dictionary<string, TemplateVariable>
+    {
+        ["value1"] = new() 
+        { 
+            Id = "1.2.3", 
+            Source = "number_value", 
+            Round = "round(0)" 
+        },
+        ["value2"] = new() 
+        { 
+            Id = "1.2.4", 
+            Source = "number_value", 
+            Round = "round(1)" 
+        },
+        ["value2Unit"] = new() 
+        { 
+            Id = "1.2.4", 
+            Source = "unit" 
+        }
+    }
+};
+
+var result = engine.ProcessTemplate(templateDto);
+// Output: "26 bis 100.7 mph"
 ```
 
 ## Template Syntax
 
-### Token Format
+### Classic Token Format
 ```
 {{item_name.property:modifier1:modifier2}}
 ```
 
-### Available Properties
+### Variable Format (TemplateDto)
+```
+{{variable_name}}
+```
+
+## TemplateDto Structure
+
+The new TemplateDto structure provides more control over template processing:
+
+### TemplateDto Properties
+- `TemplateLiteral`: The template string containing `{{variable_name}}` placeholders
+- `Variables`: Dictionary mapping variable names to their configurations
+
+### TemplateVariable Properties
+- `Id`: Identifier for the data source (matches TemplateItem.Category)
+- `Source`: Source type for the value:
+  - `"number_value"` - Gets the numeric value
+  - `"unit"` - Gets the unit string
+  - `"name"` - Gets the category name
+- `Round`: Optional rounding modifier (e.g., `"round(2)"`, `"round(0)"`)
+
+### Example JSON Structure for TemplateDto
+```json
+{
+    "template": "{{value1}} bis {{value2}} {{value2Unit}}",
+    "variables": {
+        "value1": {
+            "id": "1.2.3",
+            "source": "number_value",
+            "round": "round(0)"
+        },
+        "value2": {
+            "id": "1.2.4",
+            "source": "number_value",
+            "round": "round(1)"
+        },
+        "value2Unit": {
+            "id": "1.2.4",
+            "source": "unit"
+        }
+    }
+}
+```
+
+## Available Properties (Classic Syntax)
 - `value` - The numeric or string value
 - `unit` - The unit of measurement
 - `name` - The item name
 
-### Available Modifiers
+## Available Modifiers
 
-#### Round Modifier
+### Round Modifier
 ```csharp
 {{speed.value:round(2)}}  // Rounds to 2 decimal places
 {{speed.value:round(0)}}  // Rounds to integer
+
+// In TemplateDto
+Round = "round(2)"
 ```
 
-#### Convert Modifier
+### Convert Modifier
 ```csharp
 {{speed.value:convert(mph)}}           // km/h to mph
 {{consumption.value:convert(mpg)}}     // l/100km to mpg
 {{temperature.value:convert(fahrenheit)}} // celsius to fahrenheit
 ```
 
-#### Chaining Modifiers
+### Chaining Modifiers (Classic Syntax Only)
 ```csharp
 {{speed.value:convert(mph):round(1)}}  // Convert then round
 {{fuel.value:round(2):convert(mpg)}}   // Round then convert
@@ -99,253 +183,137 @@ services.AddTemplateEngine(jsonData, options =>
     options.ConfigureJsonOptions = jsonOptions =>
     {
         jsonOptions.AllowTrailingCommas = true;
+        jsonOptions.ReadCommentHandling = JsonCommentHandling.Skip;
     };
 });
 ```
 
-### Using Items Directly
+### Usage in Controllers/Services
 
 ```csharp
-var items = new List<TemplateItem>
-{
-    new() { Name = "speed", NumericValue = 120, Unit = "km/h" }
-};
-
-services.AddTemplateEngine(items, new CultureInfo("en-US"));
-```
-
-### Builder Pattern
-
-```csharp
-services.AddTemplateEngine(builder =>
-{
-    builder.UseJsonData(jsonData)
-           .UseCulture(new CultureInfo("fr-FR"))
-           .AddModifier<CustomModifier>()
-           .ConfigureJsonOptions(options =>
-           {
-               options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-           });
-});
-```
-
-### Using in Controllers
-
-```csharp
-[ApiController]
-public class ReportController : ControllerBase
+public class TemplateController : ControllerBase
 {
     private readonly ITemplateEngine _templateEngine;
-
-    public ReportController(ITemplateEngine templateEngine)
+    
+    public TemplateController(ITemplateEngine templateEngine)
     {
         _templateEngine = templateEngine;
     }
-
-    [HttpGet]
-    public string GenerateReport()
+    
+    [HttpPost("process")]
+    public IActionResult ProcessTemplate([FromBody] string template)
     {
-        var template = "Speed: {{vehicle_speed.value:convert(mph):round(1)}} mph";
-        return _templateEngine.ProcessTemplate(template);
+        var result = _templateEngine.ProcessTemplate(template);
+        return Ok(result);
+    }
+    
+    [HttpPost("process-dto")]
+    public IActionResult ProcessTemplateDto([FromBody] TemplateDto templateDto)
+    {
+        var result = _templateEngine.ProcessTemplate(templateDto);
+        return Ok(result);
     }
 }
 ```
 
 ## Culture Support
 
-The TemplateEngine supports culture-specific formatting:
+The template engine supports culture-specific formatting:
 
 ```csharp
-// German culture (comma as decimal separator)
-var options = new TemplateEngineOptions
-{
-    Culture = new CultureInfo("de-DE")
-};
-var engine = new TemplateEngine(jsonData, options);
+var germanCulture = new CultureInfo("de-DE");
+var engine = new TemplateEngine(items, germanCulture);
 
-// French culture
-services.AddTemplateEngine(jsonData, options =>
-{
-    options.Culture = new CultureInfo("fr-FR");
-});
+var template = "Wert: {{value.value}}";
+// Output with German formatting: "Wert: 1234,56"
 ```
 
 ## Custom Modifiers
 
-Create custom modifiers by implementing `IValueModifier`:
+Create custom value modifiers by implementing `IValueModifier`:
 
 ```csharp
-public class MultiplyModifier : IValueModifier
+public class CustomModifier : IValueModifier
 {
     public bool CanHandle(string modifierString)
     {
-        return modifierString.StartsWith("multiply(") && modifierString.EndsWith(")");
+        return modifierString.StartsWith("custom:");
     }
 
     public void Apply(ModifierContext context, string modifierString)
     {
-        var parameter = modifierString[9..^1]; // Extract parameter
-        if (double.TryParse(parameter, out var multiplier))
-        {
-            context.Value *= multiplier;
-        }
+        // Custom transformation logic
+        var parameter = modifierString.Substring(7); // Remove "custom:"
+        context.Value = context.Value * double.Parse(parameter);
     }
 }
 
 // Register the modifier
-engine.RegisterModifier(new MultiplyModifier());
-
-// Or via DI
-services.AddTemplateEngine(builder =>
-{
-    builder.UseJsonData(jsonData)
-           .AddModifier<MultiplyModifier>();
-});
+engine.RegisterModifier(new CustomModifier());
 ```
 
-## Supported Unit Conversions
+## Events and Monitoring
 
-### Speed
-- `km/h` ↔ `mph`
-
-### Fuel Consumption
-- `l/100km` ↔ `mpg`
-
-### Temperature
-- `celsius` ↔ `fahrenheit`
-
-## JSON Data Format
-
-The template engine expects JSON data in the following format:
-
-```json
-[
-  {
-    "name": "item_name",
-    "numeric_value": 123.45,
-    "unit": "kg"
-  },
-  {
-    "name": "another_item",
-    "string_value": "text value"
-  }
-]
-```
-
-### Important Notes
-- Each item must have a unique `name`
-- Items can have either `numeric_value` OR `string_value`, not both
-- `unit` is optional and only applicable to numeric values
-- Property names are case-insensitive
-- Snake_case naming is supported by default
-
-## Configuration Options
-
-### TemplateEngineOptions
+The template engine provides comprehensive event support for monitoring:
 
 ```csharp
-var options = new TemplateEngineOptions
+engine.TemplateProcessingStarted += (sender, e) => 
 {
-    Culture = new CultureInfo("en-US"),           // Default: InvariantCulture
-    ConfigureJsonOptions = jsonOptions =>         // Optional JSON configuration
+    Console.WriteLine($"Processing template with {e.TokenCount} tokens");
+};
+
+engine.TemplateProcessingCompleted += (sender, e) => 
+{
+    Console.WriteLine($"Completed in {e.Duration.TotalMilliseconds}ms");
+};
+
+engine.TokenProcessing += (sender, e) => 
+{
+    Console.WriteLine($"Processing token: {e.Token} -> {e.ProcessedValue}");
+};
+
+engine.ErrorOccurred += (sender, e) => 
+{
+    Console.WriteLine($"Error: {e.Exception.Message}");
+};
+```
+
+## Migration from Classic to TemplateDto
+
+If you're using the classic `{{item.property}}` syntax, you can migrate to the new TemplateDto structure:
+
+### Before (Classic)
+```csharp
+var template = "Speed: {{speed.value:round(1)}} {{speed.unit}}";
+```
+
+### After (TemplateDto)
+```csharp
+var templateDto = new TemplateDto
+{
+    TemplateLiteral = "Speed: {{speedValue}} {{speedUnit}}",
+    Variables = new Dictionary<string, TemplateVariable>
     {
-        jsonOptions.AllowTrailingCommas = true;
-        jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        ["speedValue"] = new() 
+        { 
+            Id = "speed", 
+            Source = "number_value", 
+            Round = "round(1)" 
+        },
+        ["speedUnit"] = new() 
+        { 
+            Id = "speed", 
+            Source = "unit" 
+        }
     }
 };
 ```
 
-### JSON Serialization Options
+## Performance Considerations
 
-You can customize JSON deserialization:
-
-```csharp
-services.AddTemplateEngine(jsonData, options =>
-{
-    options.ConfigureJsonOptions = jsonOptions =>
-    {
-        jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        jsonOptions.AllowTrailingCommas = true;
-        jsonOptions.ReadCommentHandling = JsonCommentHandling.Skip;
-    };
-});
-```
-
-## Error Handling
-
-- **Missing items**: Tokens for non-existent items remain unchanged
-- **Invalid properties**: Tokens for invalid properties remain unchanged
-- **Invalid modifiers**: Unknown modifiers are ignored
-- **Invalid conversions**: Conversion failures return the original value
-- **String values with numeric modifiers**: Modifiers are ignored for string values
-
-## Examples
-
-### Vehicle Dashboard
-
-```csharp
-var vehicleData = """
-[{
-  "name": "speed",
-  "numeric_value": 95.5,
-  "unit": "km/h"
-}, {
-  "name": "fuel_consumption",
-  "numeric_value": 7.2,
-  "unit": "l/100km"
-}, {
-  "name": "engine_temp",
-  "numeric_value": 87.5,
-  "unit": "celsius"
-}]
-""";
-
-var template = """
-Speed: {{speed.value:round(0)}} {{speed.unit}} ({{speed.value:convert(mph):round(1)}} mph)
-Fuel: {{fuel_consumption.value:convert(mpg):round(1)}} mpg
-Engine: {{engine_temp.value:convert(fahrenheit):round(0)}}°F
-""";
-
-var result = engine.ProcessTemplate(template);
-// Output:
-// Speed: 96 km/h (59.3 mph)
-// Fuel: 32.7 mpg
-// Engine: 190°F
-```
-
-### Multilingual Reports
-
-```csharp
-// German locale
-var germanOptions = new TemplateEngineOptions
-{
-    Culture = new CultureInfo("de-DE")
-};
-
-var germanEngine = new TemplateEngine(data, germanOptions);
-var result = germanEngine.ProcessTemplate("Preis: {{price.value}} EUR");
-// Output: "Preis: 1234,56 EUR" (comma as decimal separator)
-```
-
-## Testing
-
-The project includes comprehensive tests covering:
-- Basic template processing
-- Modifier functionality
-- Culture support
-- Dependency injection scenarios
-- Error handling
-- Custom modifiers
-
-Run tests with:
-```bash
-dotnet test
-```
-
-## Requirements
-
-- .NET 8.0 or later
-- Microsoft.Extensions.DependencyInjection (for DI features)
+- Template compilation is cached using compiled regular expressions
+- Event handlers are temporarily attached during processing to avoid memory leaks
+- Culture formatting is applied once during initialization
 
 ## License
 

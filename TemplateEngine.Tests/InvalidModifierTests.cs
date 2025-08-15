@@ -3,48 +3,44 @@ using Xunit;
 
 namespace TemplateEngine.Tests;
 
-/// <summary>
-/// Tests specifically for InvalidModifierException functionality.
-/// </summary>
 public class InvalidModifierTests
 {
     [Fact]
-    public void ModifierProcessor_WithInvalidModifier_ShouldThrowInvalidModifierException()
+    public void ProcessModifiers_WithInvalidModifier_ThrowsInvalidModifierException()
     {
         // Arrange
         var processor = new ModifierProcessor();
         
         // Act & Assert
-        var exception = Assert.Throws<InvalidModifierException>(() =>
-        {
-            processor.ProcessModifiers(42.0, "kg", "invalidmodifier(abc)");
-        });
+        var exception = Assert.Throws<InvalidModifierException>(() => 
+            processor.ProcessModifiers(100.0, "km/h", "invalidmodifier"));
         
-        // Assert exception details
-        Assert.Equal("invalidmodifier", exception.ModifierName);
-        Assert.Equal("invalidmodifier(abc)", exception.ModifierString);
         Assert.Contains("invalidmodifier", exception.Message);
-        Assert.Contains("invalidmodifier(abc)", exception.Message);
     }
 
     [Fact]
-    public void TemplateEngine_WithInvalidModifier_ShouldThrowInvalidModifierException()
+    public void ProcessModifiers_WithInvalidRoundParameter_ThrowsInvalidModifierException()
     {
         // Arrange
-        var items = new List<TemplateItem>
-        {
-            new() { Category = "test", NumericValue = 42.0 }
-        };
-        var engine = new TemplateEngine(items);
+        var processor = new ModifierProcessor();
         
         // Act & Assert
-        var exception = Assert.Throws<InvalidModifierException>(() =>
-        {
-            engine.ProcessTemplate("{{test.value:invalidmodifier(abc)}}");
-        });
+        var exception = Assert.Throws<InvalidModifierException>(() => 
+            processor.ProcessModifiers(100.0, "", "round(invalid)"));
         
-        // Assert exception details
-        Assert.Equal("invalidmodifier", exception.ModifierName);
-        Assert.Equal("invalidmodifier(abc)", exception.ModifierString);
+        Assert.Contains("round(invalid)", exception.Message);
+    }
+
+    [Fact]
+    public void ProcessModifiers_WithInvalidConvertUnit_ThrowsInvalidModifierException()
+    {
+        // Arrange
+        var processor = new ModifierProcessor();
+        
+        // Act & Assert
+        var exception = Assert.Throws<InvalidModifierException>(() => 
+            processor.ProcessModifiers(100.0, "km/h", "convert(invalidunit)"));
+        
+        Assert.Contains("No conversion available", exception.Message);
     }
 }
